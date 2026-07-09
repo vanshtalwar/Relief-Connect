@@ -63,6 +63,14 @@ model Notification {
   createdAt DateTime @default(now())
 }
 
+model PushSubscription {
+  id        String   @id @default(uuid())
+  endpoint  String   @unique
+  keys      Json
+  userId    String?
+  createdAt DateTime @default(now())
+}
+
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model spatial_ref_sys {
   srid      Int     @id
