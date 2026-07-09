@@ -1,5 +1,6 @@
 import { withAuth } from "next-auth/middleware";
-import { authSecret } from "./lib/auth";
+
+const authSecret = process.env.NEXTAUTH_SECRET ?? "relief-connect-dev-secret";
 
 export default withAuth({
   secret: authSecret,

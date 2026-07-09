@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     
     // Map string to Category enum
     const validCategories = Object.values(Category);
-    let category = Category.OTHER;
+    let category: Category = Category.OTHER;
     if (validCategories.includes(categoryInput as Category)) {
       category = categoryInput as Category;
     } else {
