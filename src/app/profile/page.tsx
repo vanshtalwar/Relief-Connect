@@ -128,6 +128,7 @@ export default function ProfilePage() {
               <Row label="Status" value={status === "loading" ? "Loading..." : status} />
               <Row label="Name" value={session?.user?.name ?? "Demo user"} />
               <Row label="Email" value={session?.user?.email ?? "victim@reliefconnect.dev"} />
+              <Row label="Phone" value={session?.user?.phone ?? "Not provided"} />
               <Row label="Role" value={session?.user?.role ?? "VICTIM"} />
               <Row label="Session user id" value={session?.user?.id ?? "demo-user"} />
             </dl>

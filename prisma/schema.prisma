@@ -48,7 +48,7 @@ model HelpRequest {
   locationName String?
   createdAt   DateTime                  @default(now())
   updatedAt   DateTime                  @updatedAt
-  location    Unsupported("geography")?
+  // location    Unsupported("geography")?
 
   requester          User          @relation("Requester", fields: [requesterId], references: [id])
   assignedVolunteers User?         @relation("Volunteer", fields: [volunteerId], references: [id])
@@ -56,7 +56,7 @@ model HelpRequest {
   messages           ChatMessage[]
   reviews            Review[]
 
-  @@index([location], map: "idx_helprequest_location", type: Gist)
+  // @@index([location], map: "idx_helprequest_location", type: Gist)
 }
 
 model StatusEvent {
@@ -96,13 +96,13 @@ model PushSubscription {
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-model spatial_ref_sys {
-  srid      Int     @id
-  auth_name String? @db.VarChar(256)
-  auth_srid Int?
-  srtext    String? @db.VarChar(2048)
-  proj4text String? @db.VarChar(2048)
-}
+// model spatial_ref_sys {
+//   srid      Int     @id
+//   auth_name String? @db.VarChar(256)
+//   auth_srid Int?
+//   srtext    String? @db.VarChar(2048)
+//   proj4text String? @db.VarChar(2048)
+// }
 
 model ChatMessage {
   id        String   @id @default(uuid())

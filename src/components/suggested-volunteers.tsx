@@ -78,7 +78,7 @@ export function SuggestedVolunteers({ requestId }: { requestId: string }) {
                 {distanceKm.toFixed(1)} km away <span className="mx-1">•</span> {Math.round(skillMatchScore * 100)}% Skill Match
               </p>
               <div className="mt-2 flex flex-wrap gap-1.5">
-                {volunteer.skills.slice(0,3).map(skill => (
+                {(volunteer.skills || []).slice(0,3).map(skill => (
                   <span key={skill} className="text-[10px] uppercase tracking-wider bg-[color:var(--surface-strong)] px-1.5 py-0.5 rounded text-[color:var(--foreground)]/70">{skill}</span>
                 ))}
               </div>

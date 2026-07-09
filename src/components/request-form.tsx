@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { requestSchema } from "@/lib/schemas";
@@ -23,6 +24,7 @@ export function RequestForm() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const { isLowBandwidth } = useLowBandwidth();
   const { t } = useTranslation();
+  const { data: session } = useSession();
   const form = useForm<RequestInput>({
     resolver: zodResolver(requestSchema),
     defaultValues: {
@@ -56,6 +58,20 @@ export function RequestForm() {
       form.setValue("locationName", `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
     }
   };
+
+  useEffect(() => {
+    if (session?.user) {
+      if (!form.getValues("contactName") && session.user.name) {
+        form.setValue("contactName", session.user.name);
+      }
+      if (!form.getValues("contactEmail") && session.user.email) {
+        form.setValue("contactEmail", session.user.email);
+      }
+      if (!form.getValues("contactPhone") && session.user.phone) {
+        form.setValue("contactPhone", session.user.phone);
+      }
+    }
+  }, [session, form]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && "geolocation" in navigator) {
@@ -193,13 +209,13 @@ export function RequestForm() {
         {step === 2 ? (
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label={t.form.contactName}>
-              <input className="input" {...form.register("contactName")} />
+              <input className="input" placeholder={session?.user?.name ?? ""} {...form.register("contactName")} />
             </Field>
             <Field label={t.form.contactPhone}>
-              <input className="input" {...form.register("contactPhone")} />
+              <input className="input" placeholder={session?.user?.phone ?? ""} {...form.register("contactPhone")} />
             </Field>
             <Field label={t.form.contactEmail}>
-              <input className="input sm:col-span-2" {...form.register("contactEmail")} />
+              <input className="input sm:col-span-2" placeholder={session?.user?.email ?? ""} {...form.register("contactEmail")} />
             </Field>
             {!isLowBandwidth && (
               <div className="sm:col-span-2">

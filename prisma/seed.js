@@ -1,4 +1,4 @@
-const { PrismaClient, Role, Category, Urgency, RequestStatus } = require("@prisma/client");
+const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcryptjs");
 
 const prisma = new PrismaClient();
@@ -13,7 +13,7 @@ async function main() {
       name: "Duty Coordinator",
       email: "coordinator@reliefconnect.dev",
       passwordHash,
-      role: Role.COORDINATOR,
+      role: "COORDINATOR",
       phone: "+91 90000 00001",
     },
   });
@@ -25,7 +25,7 @@ async function main() {
       name: "Harbor Volunteer",
       email: "volunteer@reliefconnect.dev",
       passwordHash,
-      role: Role.VOLUNTEER,
+      role: "VOLUNTEER",
       phone: "+91 90000 00002",
     },
   });
@@ -37,7 +37,7 @@ async function main() {
       name: "Community Resident",
       email: "victim@reliefconnect.dev",
       passwordHash,
-      role: Role.VICTIM,
+      role: "VICTIM",
       phone: "+91 90000 00003",
     },
   });
@@ -46,9 +46,9 @@ async function main() {
     {
       title: "Need bottled water for 18 families",
       description: "Floodwater cut access to the block. Seniors and children need water within the hour.",
-      category: Category.WATER,
-      urgency: Urgency.CRITICAL,
-      status: RequestStatus.OPEN,
+      category: "WATER",
+      urgency: "CRITICAL",
+      status: "OPEN",
       latitude: 18.963,
       longitude: 72.8258,
       clientUuid: "seed-req-1",
@@ -57,9 +57,9 @@ async function main() {
     {
       title: "Medical kit required near the school",
       description: "Minor injuries reported after debris cleanup. Need gauze and antiseptic.",
-      category: Category.MEDICAL,
-      urgency: Urgency.HIGH,
-      status: RequestStatus.CLAIMED,
+      category: "MEDICAL",
+      urgency: "HIGH",
+      status: "CLAIMED",
       latitude: 18.9721,
       longitude: 72.8142,
       clientUuid: "seed-req-2",
@@ -69,9 +69,9 @@ async function main() {
     {
       title: "Dry food packets for shelter",
       description: "Temporary shelter is short on breakfast packs for the morning round.",
-      category: Category.FOOD,
-      urgency: Urgency.MEDIUM,
-      status: RequestStatus.IN_PROGRESS,
+      category: "FOOD",
+      urgency: "MEDIUM",
+      status: "IN_PROGRESS",
       latitude: 18.9429,
       longitude: 72.8033,
       clientUuid: "seed-req-3",
@@ -81,9 +81,9 @@ async function main() {
     {
       title: "Rescue help for rooftop isolation",
       description: "One elderly resident needs evacuation from a low-rise building.",
-      category: Category.RESCUE,
-      urgency: Urgency.CRITICAL,
-      status: RequestStatus.OPEN,
+      category: "RESCUE",
+      urgency: "CRITICAL",
+      status: "OPEN",
       latitude: 18.995,
       longitude: 72.833,
       clientUuid: "seed-req-4",

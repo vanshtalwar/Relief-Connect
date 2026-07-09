@@ -67,6 +67,7 @@ export const authOptions: NextAuthOptions = {
         token.userId = user.id;
         token.role = (user as { role?: typeof token.role }).role ?? token.role ?? "VICTIM";
         token.image = (user as any).image ?? null;
+        token.phone = (user as any).phone ?? null;
       }
 
       return token;
@@ -87,6 +88,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = userId;
         session.user.role = token.role ?? "VICTIM";
         session.user.image = token.image ?? null;
+        session.user.phone = token.phone ?? null;
       }
 
       return session;

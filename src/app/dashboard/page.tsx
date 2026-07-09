@@ -30,6 +30,9 @@ export default async function DashboardPage() {
 
   const requests = dbRequests.map((req) => ({
     ...req,
+    category: req.category as "MEDICAL" | "FOOD" | "WATER" | "SHELTER" | "RESCUE" | "OTHER",
+    urgency: req.urgency as "LOW" | "MEDIUM" | "HIGH" | "CRITICAL",
+    status: req.status as "RESOLVED" | "OPEN" | "CLAIMED" | "IN_PROGRESS" | "CANCELLED",
     photoUrl: req.photoUrl || undefined,
     volunteerId: req.assignedVolunteers ? req.assignedVolunteers.id : undefined,
     createdAt: req.createdAt.toISOString(),

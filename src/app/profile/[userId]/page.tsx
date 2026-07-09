@@ -58,6 +58,9 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
     ? userProfile.reviewsReceived.reduce((acc, rev) => acc + rev.rating, 0) / userProfile.reviewsReceived.length
     : 0;
 
+  const skillsArray = Array.isArray(userProfile.skills) ? userProfile.skills as string[] : [];
+  const inventoryArray = Array.isArray(userProfile.inventory) ? userProfile.inventory as string[] : [];
+
   return (
     <AppShell title={`${userProfile.name}'s Profile`} subtitle="Public profile and activity history.">
       <div className="mx-auto max-w-4xl space-y-6">
@@ -121,9 +124,9 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
             <div className="space-y-6">
               <div>
                 <h4 className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">Skills</h4>
-                {userProfile.skills.length > 0 ? (
+                {skillsArray.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
-                    {userProfile.skills.map((skill) => (
+                    {skillsArray.map((skill) => (
                       <span key={skill} className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-sm font-medium text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                         {skill}
                       </span>
@@ -136,9 +139,9 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
               
               <div>
                 <h4 className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">Available Resources</h4>
-                {userProfile.inventory.length > 0 ? (
+                {inventoryArray.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
-                    {userProfile.inventory.map((item) => (
+                    {inventoryArray.map((item) => (
                       <span key={item} className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-sm font-medium text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                         {item}
                       </span>

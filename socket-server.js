@@ -65,9 +65,9 @@ io.on("connection", (socket) => {
         const recipients = [];
         if (request.requesterId !== data.senderId) recipients.push(request.requesterId);
         
-        request.assignedVolunteers.forEach(v => {
-          if (v.id !== data.senderId) recipients.push(v.id);
-        });
+        if (request.assignedVolunteers && request.assignedVolunteers.id !== data.senderId) {
+          recipients.push(request.assignedVolunteers.id);
+        }
 
         recipients.forEach(recipientId => {
           io.to(`user_${recipientId}`).emit("new_chat_notification", { requestId: data.requestId });

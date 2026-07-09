@@ -70,8 +70,8 @@ export async function POST(request: Request) {
     const result = await uploadPromise;
     
     return NextResponse.json({ url: result.url });
-  } catch (error) {
+  } catch (error: any) {
     console.error("File upload error:", error);
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+    return NextResponse.json({ error: error.message || "Upload failed" }, { status: 500 });
   }
 }
