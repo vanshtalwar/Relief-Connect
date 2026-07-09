@@ -22,7 +22,7 @@ export default function LoginPage() {
             </div>
             <h1 className="text-4xl font-semibold tracking-tight text-[color:var(--foreground)] sm:text-5xl">Sign in to coordinate support in real time.</h1>
             <p className="max-w-xl text-lg leading-8 text-slate-700 dark:text-slate-300">
-              Demo credentials are seeded for victim, volunteer, and coordinator roles so the full flow can be exercised immediately.
+              Credentials are seeded for victim, volunteer, and coordinator roles so the full flow can be exercised immediately.
             </p>
             <Link href="/signup" className="focus-ring inline-flex rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-5 py-3 text-sm font-semibold text-[color:var(--foreground)]/90 transition hover:border-sky-400/40 hover:bg-[color:var(--surface-strong)]">
               Need an account? Sign up
