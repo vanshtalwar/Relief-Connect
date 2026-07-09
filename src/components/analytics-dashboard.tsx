@@ -39,8 +39,8 @@ export function AnalyticsDashboard({ summary }: { summary: { total: number; open
               data={summary.requestSeries}
               onClick={(data) => {
                 const activeLabel = data?.activeLabel;
-                if (activeLabel) {
-                  setModalFilter({ type: "date", value: activeLabel });
+                if (activeLabel !== undefined && activeLabel !== null) {
+                  setModalFilter({ type: "date", value: String(activeLabel) });
                 }
               }}
               style={{ cursor: "pointer" }}
@@ -62,8 +62,8 @@ export function AnalyticsDashboard({ summary }: { summary: { total: number; open
               data={summary.categorySeries}
               onClick={(data) => {
                 const activeLabel = data?.activeLabel;
-                if (activeLabel) {
-                  setModalFilter({ type: "category", value: activeLabel });
+                if (activeLabel !== undefined && activeLabel !== null) {
+                  setModalFilter({ type: "category", value: String(activeLabel) });
                 }
               }}
               style={{ cursor: "pointer" }}
