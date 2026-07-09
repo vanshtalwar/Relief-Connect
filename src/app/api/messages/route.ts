@@ -17,7 +17,7 @@ export async function GET() {
       where: {
         OR: [
           { requesterId: userId },
-          { assignedVolunteers: { some: { id: userId } } }
+          { volunteerId: userId }
         ]
       },
       include: {

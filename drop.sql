@@ -1,0 +1,1 @@
+ALTER TABLE "HelpRequest" ALTER COLUMN "location" DROP EXPRESSION;

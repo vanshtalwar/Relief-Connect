@@ -31,7 +31,7 @@ export async function PATCH(request: Request, { params }: Params) {
       return NextResponse.json({ error: "No user found in database to resolve request" }, { status: 400 });
     }
 
-    const isAssignedVolunteer = targetRequest.assignedVolunteers.some(v => v.id === userId);
+    const isAssignedVolunteer = targetRequest.assignedVolunteers?.id === userId;
     const isRequester = targetRequest.requesterId === userId;
     const isCoordinator = session?.user?.role === "COORDINATOR";
 

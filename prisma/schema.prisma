@@ -8,13 +8,27 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  name         String
-  email        String   @unique
-  passwordHash String?
-  role         String   @default("VICTIM")
-  phone        String?
-  createdAt    DateTime @default(now())
+  id              String   @id @default(uuid())
+  name            String
+  email           String   @unique
+  passwordHash    String?
+  role            String   @default("VICTIM")
+  phone           String?
+  image           String?
+  isVerified      Boolean  @default(false)
+  backgroundCheck Boolean  @default(false)
+  locationConsent Boolean  @default(false)
+  skills          Json?
+  inventory       Json?
+  latitude        Float?
+  longitude       Float?
+  createdAt       DateTime @default(now())
+
+  requests        HelpRequest[] @relation("Requester")
+  claimedRequests HelpRequest[] @relation("Volunteer")
+  messages        ChatMessage[]
+  reviewsGiven    Review[]      @relation("Reviewer")
+  reviewsReceived Review[]      @relation("Reviewee")
 }
 
 model HelpRequest {
@@ -30,9 +44,17 @@ model HelpRequest {
   clientUuid  String                    @unique
   requesterId String
   volunteerId String?
+  isSOS       Boolean                   @default(false)
+  locationName String?
   createdAt   DateTime                  @default(now())
   updatedAt   DateTime                  @updatedAt
   location    Unsupported("geography")?
+
+  requester          User          @relation("Requester", fields: [requesterId], references: [id])
+  assignedVolunteers User?         @relation("Volunteer", fields: [volunteerId], references: [id])
+  statusHistory      StatusEvent[]
+  messages           ChatMessage[]
+  reviews            Review[]
 
   @@index([location], map: "idx_helprequest_location", type: Gist)
 }
@@ -43,6 +65,8 @@ model StatusEvent {
   status    String
   changedAt DateTime @default(now())
   note      String?
+
+  request   HelpRequest @relation(fields: [requestId], references: [id])
 }
 
 model Alert {
@@ -78,4 +102,30 @@ model spatial_ref_sys {
   auth_srid Int?
   srtext    String? @db.VarChar(2048)
   proj4text String? @db.VarChar(2048)
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid())
+  requestId String
+  senderId  String
+  content   String?
+  imageUrl  String?
+  createdAt DateTime @default(now())
+
+  request   HelpRequest @relation(fields: [requestId], references: [id])
+  sender    User        @relation(fields: [senderId], references: [id])
+}
+
+model Review {
+  id         String   @id @default(uuid())
+  requestId  String
+  reviewerId String
+  revieweeId String
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now())
+
+  request    HelpRequest @relation(fields: [requestId], references: [id])
+  reviewer   User        @relation("Reviewer", fields: [reviewerId], references: [id])
+  reviewee   User        @relation("Reviewee", fields: [revieweeId], references: [id])
 }

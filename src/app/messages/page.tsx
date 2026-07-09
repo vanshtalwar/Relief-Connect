@@ -11,7 +11,7 @@ type ChatPreview = {
   title: string;
   requesterId: string;
   requester: { id: string; name: string; image: string | null; role: string };
-  assignedVolunteers: { id: string; name: string; image: string | null; role: string }[];
+  assignedVolunteers: { id: string; name: string; image: string | null; role: string } | null;
   messages: { content: string; createdAt: string }[];
   updatedAt: string;
 };
@@ -60,7 +60,7 @@ export default function MessagesInboxPage() {
               const isRequester = chat.requesterId === session?.user?.id;
               // If user is requester, talk to volunteer. Else, talk to requester.
               const otherPerson = isRequester 
-                ? (chat.assignedVolunteers[0] || null) // Assuming 1 volunteer per request for now
+                ? (chat.assignedVolunteers || null) // Assuming 1 volunteer per request for now
                 : chat.requester;
               
               const lastMessage = chat.messages[0];

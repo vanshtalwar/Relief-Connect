@@ -20,7 +20,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: "Request not found" }, { status: 404 });
     }
 
-    const isAssigned = helpRequest.assignedVolunteers.some(v => v.id === session.user.id);
+    const isAssigned = helpRequest.assignedVolunteers?.id === session.user.id;
 
     // Only allow requester, volunteer, or coordinators to view messages
     if (

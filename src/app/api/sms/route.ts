@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Category, Urgency } from "@prisma/client";
 
 export async function POST(request: Request) {
   try {
@@ -23,9 +22,10 @@ export async function POST(request: Request) {
     let categoryStr = firstSpaceIndex === -1 ? content : content.slice(0, firstSpaceIndex);
     categoryStr = categoryStr.toUpperCase();
 
-    let category: Category = Category.OTHER;
-    if (Object.values(Category).includes(categoryStr as any)) {
-      category = categoryStr as Category;
+    const validCategories = ["MEDICAL", "RESCUE", "SUPPLIES", "SHELTER", "OTHER"];
+    let category = "OTHER";
+    if (validCategories.includes(categoryStr)) {
+      category = categoryStr;
       content = firstSpaceIndex === -1 ? "" : content.slice(firstSpaceIndex).trim();
     }
 
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
         title,
         description,
         category,
-        urgency: Urgency.HIGH,
+        urgency: "HIGH",
         latitude,
         longitude,
         clientUuid: crypto.randomUUID(),

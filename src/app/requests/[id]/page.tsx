@@ -39,12 +39,12 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
     }
   }) : null;
 
-  const isAssigned = session?.user?.id ? dbRequest.assignedVolunteers.some(v => v.id === session.user.id) : false;
+  const isAssigned = session?.user?.id && dbRequest.assignedVolunteers ? dbRequest.assignedVolunteers.id === session.user.id : false;
 
   const request = {
     ...dbRequest,
     photoUrl: dbRequest.photoUrl || undefined,
-    volunteerId: dbRequest.assignedVolunteers.length > 0 ? dbRequest.assignedVolunteers[0].id : undefined,
+    volunteerId: dbRequest.assignedVolunteers ? dbRequest.assignedVolunteers.id : undefined,
     createdAt: dbRequest.createdAt.toISOString(),
     updatedAt: dbRequest.updatedAt.toISOString(),
     statusHistory: dbRequest.statusHistory.map((hist: any) => ({
@@ -52,15 +52,15 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
       note: hist.note || undefined,
       changedAt: hist.changedAt.toISOString(),
     })),
-    volunteer: dbRequest.assignedVolunteers.length > 0 ? {
-      id: dbRequest.assignedVolunteers[0].id,
-      name: dbRequest.assignedVolunteers[0].name,
-      image: dbRequest.assignedVolunteers[0].image,
-      role: dbRequest.assignedVolunteers[0].role,
-      latitude: dbRequest.assignedVolunteers[0].latitude,
-      longitude: dbRequest.assignedVolunteers[0].longitude,
-      isVerified: dbRequest.assignedVolunteers[0].isVerified,
-      backgroundCheck: dbRequest.assignedVolunteers[0].backgroundCheck,
+    volunteer: dbRequest.assignedVolunteers ? {
+      id: dbRequest.assignedVolunteers.id,
+      name: dbRequest.assignedVolunteers.name,
+      image: dbRequest.assignedVolunteers.image,
+      role: dbRequest.assignedVolunteers.role,
+      latitude: dbRequest.assignedVolunteers.latitude,
+      longitude: dbRequest.assignedVolunteers.longitude,
+      isVerified: dbRequest.assignedVolunteers.isVerified,
+      backgroundCheck: dbRequest.assignedVolunteers.backgroundCheck,
     } : null,
   };
 

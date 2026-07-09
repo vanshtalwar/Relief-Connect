@@ -42,7 +42,7 @@ export async function PATCH(request: Request, { params }: Params) {
       return NextResponse.json({ error: "You cannot claim your own request" }, { status: 400 });
     }
 
-    if (targetRequest.assignedVolunteers.some(v => v.id === volunteerId)) {
+    if (targetRequest.assignedVolunteers?.id === volunteerId) {
       return NextResponse.json({ error: "You are already assigned to this request" }, { status: 400 });
     }
 

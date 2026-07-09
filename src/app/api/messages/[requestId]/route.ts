@@ -35,7 +35,7 @@ export async function GET(
     }
 
     const isRequester = helpRequest.requesterId === userId;
-    const isVolunteer = helpRequest.assignedVolunteers.some(v => v.id === userId);
+    const isVolunteer = helpRequest.assignedVolunteers?.id === userId;
     
     if (!isRequester && !isVolunteer) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -97,7 +97,7 @@ export async function POST(
     }
 
     const isRequester = helpRequest.requesterId === userId;
-    const isVolunteer = helpRequest.assignedVolunteers.some(v => v.id === userId);
+    const isVolunteer = helpRequest.assignedVolunteers?.id === userId;
     
     if (!isRequester && !isVolunteer) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -105,7 +105,7 @@ export async function POST(
 
     // Determine receiver for notification logic (basic 1-to-1 assumption for now)
     const receiverId = isRequester 
-      ? (helpRequest.assignedVolunteers[0]?.id) // Send to first volunteer
+      ? (helpRequest.assignedVolunteers?.id) // Send to volunteer
       : helpRequest.requesterId; // Send to requester
 
     // Save message

@@ -22,7 +22,7 @@ export default async function MyRequestsPage() {
       where: {
         OR: [
           { requesterId: userId },
-          { assignedVolunteers: { some: { id: userId } } },
+          { volunteerId: userId },
         ],
       },
       include: {
@@ -34,7 +34,7 @@ export default async function MyRequestsPage() {
   const requests = dbRequests.map((req) => ({
     ...req,
     photoUrl: req.photoUrl || undefined,
-    volunteerId: req.assignedVolunteers.length > 0 ? req.assignedVolunteers[0].id : undefined,
+    volunteerId: req.assignedVolunteers ? req.assignedVolunteers.id : undefined,
     createdAt: req.createdAt.toISOString(),
     updatedAt: req.updatedAt.toISOString(),
   }));

@@ -26,7 +26,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Request not found" }, { status: 404 });
     }
 
-    const assignedIds = helpRequest.assignedVolunteers.map(v => v.id);
+    const assignedIds = helpRequest.assignedVolunteers ? [helpRequest.assignedVolunteers.id] : [];
     const volunteers = await prisma.user.findMany({
       where: {
         role: "VOLUNTEER",
@@ -64,7 +64,8 @@ export async function GET(request: Request) {
       
       let skillMatchScore = 0;
       if (v.skills && targetSkills.length > 0) {
-        const matchingSkills = v.skills.filter(s => targetSkills.includes(s));
+        const skillsArray = Array.isArray(v.skills) ? v.skills : [];
+        const matchingSkills = skillsArray.filter(s => typeof s === 'string' && targetSkills.includes(s));
         skillMatchScore = matchingSkills.length / targetSkills.length;
       }
 

@@ -21,7 +21,7 @@ export default async function DashboardPage() {
     orderBy: { updatedAt: "desc" },
   });
 
-  const urgencyWeight = {
+  const urgencyWeight: Record<string, number> = {
     CRITICAL: 4,
     HIGH: 3,
     MEDIUM: 2,
@@ -31,7 +31,7 @@ export default async function DashboardPage() {
   const requests = dbRequests.map((req) => ({
     ...req,
     photoUrl: req.photoUrl || undefined,
-    volunteerId: req.assignedVolunteers.length > 0 ? req.assignedVolunteers[0].id : undefined,
+    volunteerId: req.assignedVolunteers ? req.assignedVolunteers.id : undefined,
     createdAt: req.createdAt.toISOString(),
     updatedAt: req.updatedAt.toISOString(),
     statusHistory: req.statusHistory.map((hist: any) => ({
@@ -39,11 +39,13 @@ export default async function DashboardPage() {
       note: hist.note || undefined,
       changedAt: hist.changedAt.toISOString(),
     })),
-    volunteer: req.assignedVolunteers.length > 0 ? {
-      id: req.assignedVolunteers[0].id,
-      name: req.assignedVolunteers[0].name,
-      latitude: req.assignedVolunteers[0].latitude,
-      longitude: req.assignedVolunteers[0].longitude,
+    volunteer: req.assignedVolunteers ? {
+      id: req.assignedVolunteers.id,
+      name: req.assignedVolunteers.name,
+      image: req.assignedVolunteers.image,
+      role: req.assignedVolunteers.role,
+      latitude: req.assignedVolunteers.latitude,
+      longitude: req.assignedVolunteers.longitude,
     } : null,
   })).sort((a, b) => {
     // 1. Prioritize open status

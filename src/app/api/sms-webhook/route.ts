@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Category, Urgency } from "@prisma/client";
 
 export async function POST(request: Request) {
   try {
@@ -49,11 +48,10 @@ export async function POST(request: Request) {
     const headerParts = header.split(" ");
     let categoryInput = headerParts.length > 1 ? headerParts[1] : "OTHER";
     
-    // Map string to Category enum
-    const validCategories = Object.values(Category);
-    let category: Category = Category.OTHER;
-    if (validCategories.includes(categoryInput as Category)) {
-      category = categoryInput as Category;
+    const validCategories = ["MEDICAL", "RESCUE", "SUPPLIES", "SHELTER", "OTHER"];
+    let category = "OTHER";
+    if (validCategories.includes(categoryInput)) {
+      category = categoryInput;
     } else {
       // If the second word isn't a valid category, treat it as part of the location
       categoryInput = "OTHER";
@@ -84,7 +82,7 @@ export async function POST(request: Request) {
         title: `SMS Request from ${fromPhone}`,
         description: description,
         category: category,
-        urgency: Urgency.CRITICAL, // SMS SOS is automatically elevated to Critical
+        urgency: "CRITICAL", // SMS SOS is automatically elevated to Critical
         status: "OPEN",
         latitude,
         longitude,
