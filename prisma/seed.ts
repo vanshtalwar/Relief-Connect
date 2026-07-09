@@ -16,8 +16,6 @@ async function main() {
       passwordHash,
       role: "VICTIM",
       phone: "555-0100",
-      latitude: 18.963,
-      longitude: 72.8258,
     },
   });
 
@@ -31,9 +29,6 @@ async function main() {
       passwordHash,
       role: "VOLUNTEER",
       phone: "555-0200",
-      skills: ["First Aid", "Driving"],
-      isVerified: true,
-      backgroundCheck: true,
     },
   });
 
