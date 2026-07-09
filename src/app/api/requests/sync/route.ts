@@ -86,6 +86,19 @@ export async function POST(request: Request) {
                   note: action.payload.note || "Status updated offline",
                 },
               },
+          });
+          syncedResults.push({ type: action.type, request: req });
+        } else if (action.type === "RESOLVE_REQUEST") {
+          const req = await prisma.helpRequest.update({
+            where: { id: action.payload.requestId },
+            data: {
+              status: "RESOLVED",
+              statusHistory: {
+                create: {
+                  status: "RESOLVED",
+                  note: "Resolved offline",
+                },
+              },
             },
           });
           syncedResults.push({ type: action.type, request: req });

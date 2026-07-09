@@ -59,6 +59,7 @@ export const syncActionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("CREATE_REQUEST"), payload: requestSchema }),
   z.object({ type: z.literal("CLAIM_REQUEST"), payload: z.object({ requestId: z.string().uuid(), note: z.string().optional() }) }),
   z.object({ type: z.literal("UPDATE_STATUS"), payload: z.object({ requestId: z.string().uuid(), status: z.enum(requestStatuses), note: z.string().optional() }) }),
+  z.object({ type: z.literal("RESOLVE_REQUEST"), payload: z.object({ requestId: z.string().uuid() }) }),
 ]);
 
 export const reviewSchema = z.object({
