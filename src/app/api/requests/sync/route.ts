@@ -86,6 +86,7 @@ export async function POST(request: Request) {
                   note: action.payload.note || "Status updated offline",
                 },
               },
+            },
           });
           syncedResults.push({ type: action.type, request: req });
         } else if (action.type === "RESOLVE_REQUEST") {
