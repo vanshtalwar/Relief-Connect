@@ -1,0 +1,10 @@
+{
+  "name": "ReliefConnect",
+  "short_name": "ReliefConnect",
+  "description": "Hyperlocal disaster coordination platform",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#081120",
+  "theme_color": "#0ea5e9",
+  "icons": []
+}

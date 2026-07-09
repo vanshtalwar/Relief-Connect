@@ -1,0 +1,145 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String         @id @default(uuid())
+  name            String
+  email           String         @unique
+  passwordHash    String?
+  role            Role           @default(VICTIM)
+  phone           String?
+  image           String?
+  latitude        Float?
+  longitude       Float?
+  skills          String[]
+  inventory       String[]
+  isVerified      Boolean        @default(false)
+  backgroundCheck Boolean        @default(false)
+  locationConsent Boolean        @default(false)
+  createdAt       DateTime       @default(now())
+  requests        HelpRequest[]  @relation("RequesterRequests")
+  claimedRequests HelpRequest[]  @relation("VolunteerClaims")
+  notifications   Notification[]
+  messages        ChatMessage[]  @relation("UserMessages")
+  reviewsGiven    Review[]       @relation("Reviewer")
+  reviewsReceived Review[]       @relation("Reviewee")
+}
+
+model HelpRequest {
+  id            String        @id @default(uuid())
+  title         String
+  description   String
+  category      Category
+  urgency       Urgency
+  status        RequestStatus @default(OPEN)
+  latitude      Float
+  longitude     Float
+  locationName  String?
+  photoUrl      String?
+  isSOS         Boolean       @default(false)
+  clientUuid    String        @unique
+  requesterId   String
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  requester     User          @relation("RequesterRequests", fields: [requesterId], references: [id])
+  assignedVolunteers User[]   @relation("VolunteerClaims")
+  statusHistory StatusEvent[]
+  messages      ChatMessage[]
+  reviews       Review[]
+}
+
+model StatusEvent {
+  id        String        @id @default(uuid())
+  requestId String
+  status    RequestStatus
+  changedAt DateTime      @default(now())
+  note      String?
+  request   HelpRequest   @relation(fields: [requestId], references: [id])
+}
+
+model Alert {
+  id        String   @id @default(uuid())
+  message   String
+  latitude  Float
+  longitude Float
+  radiusKm  Float
+  createdBy String
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ChatMessage {
+  id        String      @id @default(uuid())
+  requestId String
+  senderId  String
+  content   String?
+  imageUrl  String?
+  createdAt DateTime    @default(now())
+  request   HelpRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  sender    User        @relation("UserMessages", fields: [senderId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id         String      @id @default(uuid())
+  requestId  String
+  reviewerId String
+  revieweeId String
+  rating     Int
+  comment    String?
+  createdAt  DateTime    @default(now())
+  request    HelpRequest @relation(fields: [requestId], references: [id])
+  reviewer   User        @relation("Reviewer", fields: [reviewerId], references: [id])
+  reviewee   User        @relation("Reviewee", fields: [revieweeId], references: [id])
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String?
+  endpoint  String   @unique
+  keys      Json
+  createdAt DateTime @default(now())
+}
+
+enum Role {
+  VICTIM
+  VOLUNTEER
+  COORDINATOR
+}
+
+enum Category {
+  MEDICAL
+  FOOD
+  WATER
+  SHELTER
+  RESCUE
+  OTHER
+}
+
+enum Urgency {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum RequestStatus {
+  OPEN
+  CLAIMED
+  IN_PROGRESS
+  RESOLVED
+  CANCELLED
+}
