@@ -18,12 +18,12 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setMounted(true);
     const stored = localStorage.getItem("i18n-lang") as Language;
-    if (stored && (stored === "en" || stored === "es")) {
+    if (stored && (stored === "en" || stored === "hi")) {
       setLanguageState(stored);
     } else {
       const browserLang = navigator.language.split("-")[0];
-      if (browserLang === "es") {
-        setLanguageState("es");
+      if (browserLang === "hi") {
+        setLanguageState("hi");
       }
     }
   }, []);
