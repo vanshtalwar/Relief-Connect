@@ -259,7 +259,15 @@ export function syncOfflineActions(actions: SyncAction[]) {
       return { type: action.type, request: claimDemoRequest(action.payload.requestId, demoUsers[1].id, action.payload.note) };
     }
 
-    return { type: action.type, request: updateDemoRequestStatus(action.payload.requestId, action.payload.status, action.payload.note) };
+    if (action.type === "UPDATE_STATUS") {
+      return { type: action.type, request: updateDemoRequestStatus(action.payload.requestId, action.payload.status, action.payload.note) };
+    }
+
+    if (action.type === "RESOLVE_REQUEST") {
+      return { type: action.type, request: updateDemoRequestStatus(action.payload.requestId, "RESOLVED", "Resolved offline") };
+    }
+
+    return null;
   });
 
   return results;
