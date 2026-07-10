@@ -76,13 +76,14 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         let userId = token.userId ?? "";
         
-        // Keep active session image in sync with the database
+        // Keep active session data in sync with the database
         const dbUser = await prisma.user.findUnique({
           where: { id: userId },
-          select: { image: true },
+          select: { image: true, role: true },
         });
         if (dbUser) {
           token.image = dbUser.image;
+          token.role = dbUser.role;
         }
 
         session.user.id = userId;

@@ -35,8 +35,10 @@ export function SignupForm() {
           body: JSON.stringify(parsed.data),
         });
 
+        const data = await response.json();
+
         if (!response.ok) {
-          setError("That email is already registered.");
+          setError(data.error || "That email is already registered.");
           return;
         }
 
@@ -58,15 +60,17 @@ export function SignupForm() {
       }}
     >
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Full name"><input name="name" className="input" /></Field>
-        <Field label="Email"><input name="email" type="email" className="input" /></Field>
-        <Field label="Password"><input name="password" type="password" className="input" /></Field>
+        <Field label="Full name"><input name="name" className="input" required minLength={2} /></Field>
+        <Field label="Email"><input name="email" type="email" className="input" required /></Field>
+        <Field label="Password">
+          <input name="password" type="password" className="input" required minLength={8} placeholder="At least 8 characters" />
+        </Field>
         <Field label="Role">
           <select name="role" className="input">
-            {roles.filter((role) => role !== "COORDINATOR").map((role) => <option key={role} value={role}>{role}</option>)}
+            {roles.filter((role) => role !== "COORDINATOR").map((role) => <option key={role} value={role}>{role === "VICTIM" ? "Victim (I need help)" : "Volunteer (I want to help)"}</option>)}
           </select>
         </Field>
-        <Field label="Phone"><input name="phone" className="input sm:col-span-2" /></Field>
+        <Field label="Phone"><input name="phone" type="tel" className="input sm:col-span-2" placeholder="Optional" /></Field>
       </div>
       {error ? <p className="mt-4 text-sm text-red-400">{error}</p> : null}
       <button type="submit" className="focus-ring mt-5 w-full rounded-full bg-sky-500 px-4 py-3 text-sm font-semibold text-slate-950">Create account</button>

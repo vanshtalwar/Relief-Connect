@@ -24,6 +24,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Email already registered" }, { status: 409 });
   }
 
+  if (parsed.data.phone) {
+    const existingPhone = await prisma.user.findFirst({
+      where: { phone: parsed.data.phone },
+    });
+    if (existingPhone) {
+      return NextResponse.json({ error: "Mobile number already registered" }, { status: 409 });
+    }
+  }
+
   const passwordHash = await bcrypt.hash(parsed.data.password, 10);
   const user = await prisma.user.create({
     data: {

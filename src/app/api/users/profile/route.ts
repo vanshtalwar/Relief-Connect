@@ -8,6 +8,7 @@ const profileSchema = z.object({
   image: z.string().or(z.literal("")).nullable().optional(),
   inventory: z.array(z.string()).optional(),
   locationConsent: z.boolean().optional(),
+  role: z.enum(["VICTIM", "VOLUNTEER"]).optional(),
 });
 
 export async function GET(request: Request) {
@@ -48,6 +49,7 @@ export async function PATCH(request: Request) {
         ...(parsed.data.image !== undefined ? { image: parsed.data.image || null } : {}),
         ...(parsed.data.inventory !== undefined ? { inventory: parsed.data.inventory } : {}),
         ...(parsed.data.locationConsent !== undefined ? { locationConsent: parsed.data.locationConsent } : {}),
+        ...(parsed.data.role !== undefined ? { role: parsed.data.role } : {}),
       },
     });
 

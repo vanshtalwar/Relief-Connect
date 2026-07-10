@@ -161,7 +161,10 @@ export function RequestForm() {
               <input className="input" {...form.register("title")} />
             </Field>
             <Field label={t.form.description} error={form.formState.errors.description?.message}>
-              <textarea className="input min-h-40" {...form.register("description")} />
+              <textarea className="input min-h-40" {...form.register("description")} minLength={20} />
+              <div className="mt-1 text-xs text-slate-500 dark:text-slate-400 text-right">
+                {values.description?.length || 0} / 20 minimum characters
+              </div>
             </Field>
           </>
         ) : null}

@@ -15,6 +15,8 @@ export default function ProfilePage() {
   const [locationConsent, setLocationConsent] = useState(false);
   const [isUpdatingConsent, setIsUpdatingConsent] = useState(false);
 
+  const [isUpdatingRole, setIsUpdatingRole] = useState(false);
+
   useEffect(() => {
     fetch("/api/users/profile")
       .then((res) => res.json())
@@ -68,6 +70,27 @@ export default function ProfilePage() {
       alert("Failed to update location consent.");
     } finally {
       setIsUpdatingConsent(false);
+    }
+  };
+
+  const handleRoleToggle = async () => {
+    setIsUpdatingRole(true);
+    try {
+      const newRole = session?.user?.role === "VICTIM" ? "VOLUNTEER" : "VICTIM";
+      const res = await fetch("/api/users/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: newRole }),
+      });
+      if (res.ok) {
+        await update(); // Refresh session
+      } else {
+        throw new Error("Role update failed");
+      }
+    } catch {
+      alert("Failed to update role.");
+    } finally {
+      setIsUpdatingRole(false);
     }
   };
 
@@ -129,7 +152,21 @@ export default function ProfilePage() {
               <Row label="Name" value={session?.user?.name ?? "Demo user"} />
               <Row label="Email" value={session?.user?.email ?? "victim@reliefconnect.dev"} />
               <Row label="Phone" value={session?.user?.phone ?? "Not provided"} />
-              <Row label="Role" value={session?.user?.role ?? "VICTIM"} />
+              <div className="flex items-center justify-between gap-4 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3">
+                <dt className="text-slate-500 dark:text-slate-400">Role</dt>
+                <dd className="text-right flex items-center gap-3">
+                  <span className="font-medium text-slate-900 dark:text-white">{session?.user?.role ?? "VICTIM"}</span>
+                  {session?.user?.role !== "COORDINATOR" && (
+                    <button
+                      onClick={handleRoleToggle}
+                      disabled={isUpdatingRole}
+                      className="focus-ring rounded-full bg-sky-500/10 px-3 py-1 text-xs font-semibold text-sky-600 transition hover:bg-sky-500/20 disabled:opacity-50 dark:text-sky-400"
+                    >
+                      {isUpdatingRole ? "Switching..." : `Switch to ${session?.user?.role === "VICTIM" ? "VOLUNTEER" : "VICTIM"}`}
+                    </button>
+                  )}
+                </dd>
+              </div>
               <Row label="Session user id" value={session?.user?.id ?? "demo-user"} />
             </dl>
           </div>
