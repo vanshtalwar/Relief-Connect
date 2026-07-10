@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"next dev --webpack\" \"node socket-server.js\"",
+    "dev": "node server.js",
     "build": "next build --webpack",
-    "start": "next start",
+    "start": "NODE_ENV=production node server.js",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

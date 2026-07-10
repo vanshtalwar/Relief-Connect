@@ -110,7 +110,7 @@ export function RequestCard({
             onChange={(e) => setDescription(e.target.value)}
             disabled={isSaving}
           />
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <select
               className="input text-sm text-[color:var(--foreground)]"
               value={category}

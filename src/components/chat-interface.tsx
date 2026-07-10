@@ -41,7 +41,8 @@ export function ChatInterface({ requestId }: { requestId: string }) {
       });
 
     // Connect to Socket.IO server on port 3001
-    const newSocket = io("http://localhost:3001");
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "";
+    const newSocket = io(socketUrl);
     
     newSocket.on("connect", () => {
       newSocket.emit("join_request_room", requestId);
