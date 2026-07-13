@@ -30,6 +30,10 @@ const Polyline = dynamic(
   () => import("react-leaflet").then((mod) => mod.Polyline as unknown as ComponentType<LeafletComponentProps>),
   { ssr: false },
 );
+const LayerGroup = dynamic(
+  () => import("react-leaflet").then((mod) => mod.LayerGroup as unknown as ComponentType<LeafletComponentProps>),
+  { ssr: false },
+);
 
 const customIcon = typeof window !== "undefined" ? require("leaflet").icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -168,43 +172,44 @@ export function RequestDetailMap({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         />
-        
-        <Marker position={[victimLat, victimLng]} icon={customIcon || undefined}>
-          <Popup>
-            <div>
-              <h4 className="font-bold">Victim Location</h4>
-              {locationName && <p className="text-xs text-slate-500">{locationName}</p>}
-            </div>
-          </Popup>
-        </Marker>
+        <LayerGroup>
+          <Marker position={[victimLat, victimLng]} icon={customIcon || undefined}>
+            <Popup>
+              <div>
+                <h4 className="font-bold">Victim Location</h4>
+                {locationName && <p className="text-xs text-slate-500">{locationName}</p>}
+              </div>
+            </Popup>
+          </Marker>
 
-        {hasVolunteerCoords && (
-          <>
-            <Marker
-              position={[volunteer.latitude!, volunteer.longitude!]}
-              icon={volunteerIcon || undefined}
-            >
-              <Popup>
-                <div>
-                  <h4 className="font-bold">Volunteer ({volunteer.name})</h4>
-                  <p className="text-xs text-emerald-600 font-semibold">
-                    Proximity: {formatDistance(haversineDistanceKm(
-                      { latitude: victimLat, longitude: victimLng },
-                      { latitude: volunteer.latitude!, longitude: volunteer.longitude! }
-                    ))}
-                  </p>
-                </div>
-              </Popup>
-            </Marker>
-            <Polyline
-              positions={[
-                [victimLat, victimLng],
-                [volunteer.latitude!, volunteer.longitude!]
-              ]}
-              pathOptions={{ color: "#10b981", dashArray: "5, 10", weight: 3 }}
-            />
-          </>
-        )}
+          {hasVolunteerCoords && (
+            <LayerGroup>
+              <Marker
+                position={[volunteer.latitude!, volunteer.longitude!]}
+                icon={volunteerIcon || undefined}
+              >
+                <Popup>
+                  <div>
+                    <h4 className="font-bold">Volunteer ({volunteer.name})</h4>
+                    <p className="text-xs text-emerald-600 font-semibold">
+                      Proximity: {formatDistance(haversineDistanceKm(
+                        { latitude: victimLat, longitude: victimLng },
+                        { latitude: volunteer.latitude!, longitude: volunteer.longitude! }
+                      ))}
+                    </p>
+                  </div>
+                </Popup>
+              </Marker>
+              <Polyline
+                positions={[
+                  [victimLat, victimLng],
+                  [volunteer.latitude!, volunteer.longitude!]
+                ]}
+                pathOptions={{ color: "#10b981", dashArray: "5, 10", weight: 3 }}
+              />
+            </LayerGroup>
+          )}
+        </LayerGroup>
       </MapContainer>
 
       {hasVolunteerCoords && !isLowBandwidth && (

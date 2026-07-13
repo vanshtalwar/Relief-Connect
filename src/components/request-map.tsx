@@ -34,6 +34,10 @@ const Polyline = dynamic(
   () => import("react-leaflet").then((mod) => mod.Polyline as unknown as ComponentType<LeafletComponentProps>),
   { ssr: false },
 );
+const LayerGroup = dynamic(
+  () => import("react-leaflet").then((mod) => mod.LayerGroup as unknown as ComponentType<LeafletComponentProps>),
+  { ssr: false },
+);
 
 const DEFAULT_CENTER: [number, number] = [18.963, 72.8258];
 
@@ -52,27 +56,75 @@ const volunteerIcon = typeof window !== "undefined" ? require("leaflet").icon({
   className: "volunteer-marker-icon",
 }) : null;
 
-function MapBoundsUpdater({ requests }: { requests: any[] }) {
+const userIcon = typeof window !== "undefined" ? require("leaflet").icon({
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  className: "user-marker-icon",
+}) : null;
+
+function MapBoundsUpdater({ requests, boundsKey, userLocation }: { requests: any[], boundsKey?: string, userLocation?: {lat: number, lng: number} | null }) {
   const map = useMap();
+  const hasZoomedToUserRef = React.useRef(false);
+
   useEffect(() => {
-    if (!requests || requests.length === 0) return;
-    
+    if (!requests || requests.length === 0) {
+      if (userLocation && !hasZoomedToUserRef.current) {
+        hasZoomedToUserRef.current = true;
+        map.setView([userLocation.lat, userLocation.lng], 15, { animate: true, duration: 1 });
+      }
+      return;
+    }
+
     const lats = requests.map((r) => r.latitude);
     const lngs = requests.map((r) => r.longitude);
+
+    if (userLocation && !hasZoomedToUserRef.current) {
+      lats.push(userLocation.lat);
+      lngs.push(userLocation.lng);
+      hasZoomedToUserRef.current = true;
+    }
+
     const minLat = Math.min(...lats);
     const maxLat = Math.max(...lats);
     const minLng = Math.min(...lngs);
     const maxLng = Math.max(...lngs);
-    
+
     map.fitBounds(
       [
         [minLat, minLng],
         [maxLat, maxLng]
-      ], 
+      ],
       { padding: [50, 50], maxZoom: 15, animate: true, duration: 1 }
     );
-  }, [requests, map]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boundsKey, map, userLocation]);
   return null;
+}
+
+function RecenterControl({ userLocation }: { userLocation: {lat: number, lng: number} | null }) {
+  const map = useMap();
+  
+  if (!userLocation) return null;
+
+  return (
+    <div className="leaflet-bottom leaflet-left" style={{ zIndex: 1000, pointerEvents: 'auto', marginBottom: '20px', marginLeft: '10px' }}>
+      <div className="leaflet-control">
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            map.setView([userLocation.lat, userLocation.lng], 15, { animate: true, duration: 1 });
+          }}
+          className="flex items-center gap-2 bg-[#1A1D24] text-[#EDEDED] px-3 py-2 text-[12px] font-semibold tracking-wide rounded-md shadow-md border border-[rgba(255,255,255,0.06)] hover:bg-[#2A2E38] transition-colors"
+          title="Recenter on my location"
+        >
+          📍 Recenter on Me
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export function RequestMap({ requests }: { requests: any[] }) {
@@ -80,28 +132,33 @@ export function RequestMap({ requests }: { requests: any[] }) {
   const [liveRequests, setLiveRequests] = useState<any[]>(requests);
   const [category, setCategory] = useState<Category | "ALL">("ALL");
   const [urgency, setUrgency] = useState<Urgency | "ALL">("ALL");
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   const { isLowBandwidth } = useLowBandwidth();
 
   useEffect(() => {
     setLiveRequests(requests);
   }, [requests]);
 
-  // Watch position and update database if user is volunteer
+  // Watch position for map rendering, upload to db if VOLUNTEER
   useEffect(() => {
-    if (session?.user?.role !== "VOLUNTEER" || !("geolocation" in navigator)) {
+    if (!("geolocation" in navigator)) {
       return;
     }
     const watchId = navigator.geolocation.watchPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
-        try {
-          await fetch("/api/users/location", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ latitude, longitude }),
-          });
-        } catch (err) {
-          console.error("Failed to upload volunteer location:", err);
+        setUserLocation({ lat: latitude, lng: longitude });
+        
+        if (session?.user?.role === "VOLUNTEER") {
+          try {
+            await fetch("/api/users/location", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ latitude, longitude }),
+            });
+          } catch (err) {
+            console.error("Failed to upload volunteer location:", err);
+          }
         }
       },
       (err) => console.log("Watch position error:", err),
@@ -176,12 +233,32 @@ export function RequestMap({ requests }: { requests: any[] }) {
                   .volunteer-marker-icon {
                     filter: hue-rotate(120deg) !important;
                   }
+                  .user-marker-icon {
+                    filter: hue-rotate(280deg) !important;
+                  }
+                  .leaflet-popup-content-wrapper {
+                    background: var(--surface) !important;
+                    color: var(--foreground) !important;
+                  }
+                  .leaflet-popup-tip {
+                    background: var(--surface) !important;
+                  }
                 `}</style>
                 <MapContainer center={DEFAULT_CENTER} zoom={12} className="h-full w-full">
                   <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
-                  <MapBoundsUpdater requests={filteredRequests} />
+                  <MapBoundsUpdater requests={filteredRequests} boundsKey={`${category}-${urgency}`} userLocation={userLocation} />
+                  <RecenterControl userLocation={userLocation} />
+                  
+                  {userLocation && (
+                    <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon || undefined} zIndexOffset={1000}>
+                      <Popup>
+                        <div className="font-medium text-[13px]">📍 You are here</div>
+                      </Popup>
+                    </Marker>
+                  )}
+                  
                   {filteredRequests.map((request) => (
-                    <React.Fragment key={request.id}>
+                    <LayerGroup key={request.id}>
                       <Marker position={[request.latitude, request.longitude]} icon={customIcon || undefined}>
                         <Popup>
                           <div className="max-w-xs">
@@ -197,7 +274,7 @@ export function RequestMap({ requests }: { requests: any[] }) {
                         </Popup>
                       </Marker>
                       {request.status !== "OPEN" && request.volunteer && request.volunteer.latitude && request.volunteer.longitude && (
-                        <>
+                        <LayerGroup>
                           <Marker
                             position={[request.volunteer.latitude, request.volunteer.longitude]}
                             icon={volunteerIcon || undefined}
@@ -223,9 +300,9 @@ export function RequestMap({ requests }: { requests: any[] }) {
                             ]}
                             pathOptions={{ color: "#10b981", dashArray: "5, 10", weight: 3 }}
                           />
-                        </>
+                        </LayerGroup>
                       )}
-                    </React.Fragment>
+                    </LayerGroup>
                   ))}
                 </MapContainer>
               </>

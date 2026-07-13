@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requestSchema } from "@/lib/schemas";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -52,10 +54,17 @@ export async function PATCH(request: Request, { params }: Params) {
 
 export async function DELETE(_request: Request, { params }: Params) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || session.user.role !== "COORDINATOR") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
 
     await prisma.$transaction([
       prisma.statusEvent.deleteMany({ where: { requestId: id } }),
+      prisma.chatMessage.deleteMany({ where: { requestId: id } }),
+      prisma.review.deleteMany({ where: { requestId: id } }),
       prisma.helpRequest.delete({ where: { id } }),
     ]);
 

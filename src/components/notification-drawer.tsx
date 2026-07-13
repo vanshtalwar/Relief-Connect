@@ -9,6 +9,52 @@ type NotificationItem = {
   createdAt: string;
 };
 
+function ParsedNotificationMessage({ message }: { message: string }) {
+  // Regex for Claimed Request
+  const claimRegex = /Volunteer "(.*?)" claimed request "(.*?)". Category: (.*?), Urgency: (.*?), Requester: (.*?). Message: (.*)/;
+  const claimMatch = message.match(claimRegex);
+  
+  if (claimMatch) {
+    const [_, volunteer, requestTitle, category, urgency, requester, reqMessage] = claimMatch;
+    return (
+      <div className="flex flex-col gap-2">
+        <p className="text-[13px] text-[#EDEDED] font-medium leading-snug">
+          <span className="text-[#3FA37E] font-semibold">{volunteer}</span> claimed request <span className="font-semibold">"{requestTitle}"</span>
+        </p>
+        <div className="flex flex-wrap gap-1.5 mt-0.5">
+          <span className="px-1.5 py-0.5 bg-[#22262F] text-[10px] uppercase tracking-wider font-bold text-[#A0A0A0] rounded">
+            {category}
+          </span>
+          <span className={`px-1.5 py-0.5 bg-[#22262F] text-[10px] uppercase tracking-wider font-bold rounded ${urgency === 'CRITICAL' ? 'text-[#E05C5C]' : 'text-[#D0A24C]'}`}>
+            {urgency}
+          </span>
+        </div>
+        <div className="mt-1 flex flex-col gap-1 text-[12px] text-[#A0A0A0] bg-[#13151A] p-2.5 rounded-md border border-[rgba(255,255,255,0.05)]">
+           <p><strong className="text-[#737373] uppercase tracking-wider text-[9px] mr-1">Requester:</strong> {requester}</p>
+           {reqMessage && reqMessage !== "No message left" && (
+             <p><strong className="text-[#737373] uppercase tracking-wider text-[9px] mr-1">Message:</strong> {reqMessage}</p>
+           )}
+        </div>
+      </div>
+    );
+  }
+
+  // Regex for New/Pending request
+  const pendingRegex = /Request "(.*?)" is now pending volunteer review./;
+  const pendingMatch = message.match(pendingRegex);
+  if (pendingMatch) {
+    const [_, requestTitle] = pendingMatch;
+    return (
+      <p className="text-[13px] text-[#EDEDED] leading-snug">
+         New request <span className="font-semibold">"{requestTitle}"</span> is pending review.
+      </p>
+    );
+  }
+
+  // Fallback
+  return <p className="text-[13px] text-[#EDEDED] leading-snug">{message}</p>;
+}
+
 export function NotificationDrawer() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -49,65 +95,104 @@ export function NotificationDrawer() {
     return "Detailed event log: This alert was dispatched automatically by the live operations sync engine. Responders have been notified and logs have been updated.";
   };
 
-  if (loading) {
+  if (loading && notifications.length === 0) {
     return (
-      <div className="glass-panel rounded-3xl p-5 text-center text-slate-500">
-        Loading notifications...
+      <div className="flex h-full min-h-[400px] flex-col bg-[#1A1D24] border border-[rgba(255,255,255,0.06)] rounded-xl overflow-hidden shadow-sm">
+        <div className="border-b border-[rgba(255,255,255,0.06)] px-4 py-3 bg-[#13151A]">
+          <div className="h-4 w-20 bg-[#2A2E38] rounded animate-pulse"></div>
+        </div>
+        <div className="flex-1 p-4 space-y-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex gap-4 animate-pulse">
+              <div className="flex-1 space-y-3">
+                <div className="h-3 w-5/6 bg-[#2A2E38] rounded"></div>
+                <div className="h-3 w-4/6 bg-[#2A2E38] rounded"></div>
+                <div className="flex gap-2 mt-2">
+                  <div className="h-4 w-12 bg-[#22262F] rounded"></div>
+                  <div className="h-4 w-12 bg-[#22262F] rounded"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="glass-panel rounded-3xl p-5">
-      <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Notifications</h2>
-      <div className="mt-4 space-y-3">
-        {notifications.length > 0 ? (
-          notifications.map((notification) => {
-            const isExpanded = expandedId === notification.id;
-            return (
-              <div
-                key={notification.id}
-                onClick={() => setExpandedId(isExpanded ? null : notification.id)}
-                className="group cursor-pointer rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3 text-sm transition hover:border-sky-400/40 hover:bg-[color:var(--surface-strong)]"
-                aria-expanded={isExpanded}
-              >
-                <div className="flex items-center justify-between gap-4">
-                  <span className="font-medium text-slate-800 dark:text-slate-200 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
-                    {notification.message}
-                  </span>
-                  <span className="text-xs text-slate-400 shrink-0">
-                    {isExpanded ? "▲" : "▼"}
-                  </span>
-                </div>
-                {isExpanded && (
-                  <div className="mt-3 border-t border-[color:var(--border)] pt-3 text-xs leading-relaxed text-slate-600 dark:text-slate-400 animate-slide-down">
-                    {getDetailedMessage(notification.message)}
-                  </div>
-                )}
-              </div>
-            );
-          })
-        ) : (
-          <div className="text-center text-xs text-slate-500 py-4">No notifications logged.</div>
-        )}
+    <div className="flex flex-col bg-[#1A1D24] border border-[rgba(255,255,255,0.06)] rounded-xl overflow-hidden h-full max-h-[600px] shadow-sm">
+      <div className="border-b border-[rgba(255,255,255,0.06)] px-4 py-3 bg-[#13151A] flex items-center justify-between">
+        <h2 className="text-[13px] font-medium text-[#EDEDED] tracking-wide">Activity Log</h2>
+        <div className="flex items-center gap-2.5">
+          {loading && <span className="text-[9px] text-[#737373] uppercase tracking-widest font-medium">Syncing</span>}
+          <div className="relative flex h-2 w-2 items-center justify-center">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#3FA37E] opacity-30 duration-1000"></span>
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#3FA37E]"></span>
+          </div>
+        </div>
       </div>
       
+      <div className="flex-1 overflow-y-auto safe-scrollbar">
+        {notifications.length > 0 ? (
+          <div className="flex flex-col divide-y divide-[rgba(255,255,255,0.04)]">
+            {notifications.map((notification) => {
+              const isExpanded = expandedId === notification.id;
+              return (
+                <div
+                  key={notification.id}
+                  onClick={() => setExpandedId(isExpanded ? null : notification.id)}
+                  className="group cursor-pointer bg-transparent px-4 py-4 transition-colors duration-200 hover:bg-[rgba(255,255,255,0.02)]"
+                  aria-expanded={isExpanded}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <ParsedNotificationMessage message={notification.message} />
+                    </div>
+                    <span className="mt-0.5 text-[9px] text-[#737373] group-hover:text-[#A0A0A0] transition-colors shrink-0">
+                      {isExpanded ? "▲" : "▼"}
+                    </span>
+                  </div>
+                  {isExpanded && (
+                    <div className="mt-4 pl-3 border-l-2 border-[#2A2E38] text-[12px] leading-relaxed text-[#A0A0A0] animate-slide-down">
+                      {getDetailedMessage(notification.message)}
+                      <p className="mt-2 text-[10px] text-[#737373] font-medium tracking-wide">
+                        {new Date(notification.createdAt).toLocaleString(undefined, {
+                           month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <svg className="w-10 h-10 text-[#2A2E38] mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+            </svg>
+            <p className="text-[13px] text-[#A0A0A0] font-medium">All caught up</p>
+            <p className="text-[12px] text-[#737373] mt-1">No new activity to report.</p>
+          </div>
+        )}
+      </div>
+
       {totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-between border-t border-[color:var(--border)] pt-4">
+        <div className="flex items-center justify-between border-t border-[rgba(255,255,255,0.06)] bg-[#13151A] px-4 py-3">
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1 || loading}
-            className="focus-ring rounded-full border border-[color:var(--border)] px-3 py-1.5 text-xs font-medium text-[color:var(--foreground)] disabled:opacity-40 hover:bg-[color:var(--surface-strong)] transition"
+            className="rounded-md px-3 py-1.5 text-[11px] font-medium tracking-wide text-[#EDEDED] transition-colors duration-200 hover:bg-[#2A2E38] disabled:opacity-40 disabled:hover:bg-transparent"
           >
             Previous
           </button>
-          <span className="text-xs text-slate-500">
+          <span className="text-[11px] font-medium tracking-wide text-[#737373]">
             Page {page} of {totalPages}
           </span>
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page === totalPages || loading}
-            className="focus-ring rounded-full border border-[color:var(--border)] px-3 py-1.5 text-xs font-medium text-[color:var(--foreground)] disabled:opacity-40 hover:bg-[color:var(--surface-strong)] transition"
+            className="rounded-md px-3 py-1.5 text-[11px] font-medium tracking-wide text-[#EDEDED] transition-colors duration-200 hover:bg-[#2A2E38] disabled:opacity-40 disabled:hover:bg-transparent"
           >
             Next
           </button>
