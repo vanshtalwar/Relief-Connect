@@ -56,6 +56,10 @@ model HelpRequest {
   messages           ChatMessage[]
   reviews            Review[]
 
+  @@index([status])
+  @@index([category])
+  @@index([createdAt])
+  @@index([updatedAt])
   // @@index([location], map: "idx_helprequest_location", type: Gist)
 }
 

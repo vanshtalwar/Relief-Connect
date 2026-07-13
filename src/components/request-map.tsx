@@ -136,6 +136,7 @@ export function RequestMap({ requests }: { requests: any[] }) {
   const { isLowBandwidth } = useLowBandwidth();
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLiveRequests(requests);
   }, [requests]);
 

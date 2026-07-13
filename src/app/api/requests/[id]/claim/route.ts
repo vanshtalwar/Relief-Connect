@@ -50,21 +50,29 @@ export async function PATCH(request: Request, { params }: Params) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
 
-    const updated = await prisma.helpRequest.update({
-      where: { id },
-      data: {
-        status: "CLAIMED",
-        assignedVolunteers: {
-          connect: { id: volunteerId }
-        },
-        statusHistory: {
-          create: {
-            status: "CLAIMED",
-            note: parsed.data.note || "Volunteer accepted the request",
+    const [updated] = await prisma.$transaction([
+      prisma.helpRequest.update({
+        where: { id },
+        data: {
+          status: "CLAIMED",
+          assignedVolunteers: {
+            connect: { id: volunteerId }
+          },
+          statusHistory: {
+            create: {
+              status: "CLAIMED",
+              note: parsed.data.note || "Volunteer accepted the request",
+            },
           },
         },
-      },
-    });
+      }),
+      prisma.notification.create({
+        data: {
+          userId: targetRequest.requesterId,
+          message: `Volunteer claimed your request. Note: ${parsed.data.note || "No message left"}`,
+        }
+      })
+    ]);
 
     const volunteerUser = await prisma.user.findUnique({ where: { id: volunteerId } });
     const volunteerName = volunteerUser ? volunteerUser.name : "A volunteer";
@@ -74,15 +82,6 @@ export async function PATCH(request: Request, { params }: Params) {
     const requesterPhone = requesterUser?.phone ? requesterUser.phone : "N/A";
 
     const notificationMessage = `Volunteer "${volunteerName}" claimed request "${targetRequest.title}". Category: ${targetRequest.category}, Urgency: ${targetRequest.urgency}, Requester: ${requesterName} (${requesterPhone}). Message: ${parsed.data.note || "No message left"}`;
-
-    // Add notification in database for all users (matches old mutual-aid broadcast behavior)
-    const users = await prisma.user.findMany();
-    await prisma.notification.createMany({
-      data: users.map((user) => ({
-        userId: user.id,
-        message: notificationMessage,
-      })),
-    });
 
     // Send Web Push notification to requester if subscribed
     const pushSubscriptions = await prisma.pushSubscription.findMany({

@@ -3,12 +3,9 @@ import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { prisma } from "./prisma";
-import { getDemoUserByEmail } from "./demo-store";
 import { loginSchema } from "./schemas";
 
 export const authSecret = process.env.NEXTAUTH_SECRET ?? "relief-connect-dev-secret";
-
-const demoPasswordHash = bcrypt.hashSync("demo1234", 10);
 
 export const authOptions: NextAuthOptions = {
   secret: authSecret,
@@ -66,15 +63,15 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.userId = user.id;
         token.role = (user as { role?: typeof token.role }).role ?? token.role ?? "VICTIM";
-        token.image = (user as any).image ?? null;
-        token.phone = (user as any).phone ?? null;
+        token.image = (user as { image?: string | null }).image ?? null;
+        token.phone = (user as { phone?: string | null }).phone ?? null;
       }
 
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        let userId = token.userId ?? "";
+        const userId = token.userId ?? "";
         
         // Keep active session data in sync with the database
         const dbUser = await prisma.user.findUnique({

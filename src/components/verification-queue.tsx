@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 type PendingVolunteer = {
   id: string;
@@ -79,7 +80,7 @@ export function VerificationQueue() {
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 overflow-hidden rounded-full border border-[color:var(--border)] bg-slate-100 dark:bg-slate-800 flex shrink-0 items-center justify-center">
               {v.image ? (
-                <img src={v.image} alt={v.name} className="h-full w-full object-cover" />
+                <Image src={v.image} alt={v.name} width={40} height={40} className="h-full w-full object-cover" unoptimized={true} />
               ) : (
                 <span className="text-lg">👤</span>
               )}

@@ -32,14 +32,19 @@ export async function GET(request: Request) {
           }
         } : {}),
       },
-      include: {
-        statusHistory: {
-          orderBy: { changedAt: "asc" },
-        },
-      },
+      take: 500, // Limit maximum records fetched to prevent payload explosion
       orderBy: { updatedAt: "desc" },
     });
-    return NextResponse.json({ requests });
+    
+    // Add caching headers for performance
+    return NextResponse.json(
+      { requests },
+      {
+        headers: {
+          "Cache-Control": "s-maxage=5, stale-while-revalidate=30", // Cache for 5s, serve stale while revalidating
+        },
+      }
+    );
   } catch (error) {
     console.error("GET requests error:", error);
     return NextResponse.json({ error: "Failed to fetch requests" }, { status: 500 });

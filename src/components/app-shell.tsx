@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { useEffect, useState, useRef, type ReactNode } from "react";
-import io from "socket.io-client";
+import { useEffect, useState, useRef, useCallback, type ReactNode } from "react";
+import { useChatSocket } from "@/hooks/use-chat-socket";
 import { OfflineIndicator } from "./offline-indicator";
 import { AuthActions } from "./auth-actions";
 import { ThemeToggle } from "./theme-toggle";
@@ -76,27 +76,11 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
     pathnameRef.current = pathname;
   }, [pathname]);
 
-  useEffect(() => {
-    if (!session?.user?.id) return;
+  const handleNotification = useCallback(() => {
+    setChatNotificationCount((prev) => prev + 1);
+  }, []);
 
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "";
-    const socket = io(socketUrl);
-
-    socket.on("connect", () => {
-      socket.emit("join_user_room", session.user.id);
-    });
-
-    socket.on("new_chat_notification", (data) => {
-      // Avoid incrementing if the user is currently ON the request detail page
-      if (pathnameRef.current !== `/requests/${data.requestId}`) {
-        setChatNotificationCount((prev) => prev + 1);
-      }
-    });
-
-    return () => {
-      socket.disconnect();
-    };
-  }, [session?.user?.id]);
+  useChatSocket(session?.user?.id, pathnameRef, handleNotification);
 
   const visibleNavigation = navigationKeys.filter((item) => {
     if (item.href === "/") {
