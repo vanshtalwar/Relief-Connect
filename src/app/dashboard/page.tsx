@@ -4,6 +4,14 @@ import { buildCoordinatorSummary } from "@/lib/analytics";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import Link from "next/link";
+import { SOSButton } from "@/components/sos-button";
+
+const PlusIcon = () => (
+  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -69,78 +77,95 @@ export default async function DashboardPage() {
 
   return (
     <AppShell title="Live map dashboard" subtitle="Track nearby requests, claim work, and see the full response picture without leaving the map-first workspace.">
-      <div className="space-y-6">
-        <section className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-          <div className="glass-panel rounded-3xl p-6 sm:p-7 flex flex-col justify-between">
+      <div className="space-y-8 animate-in fade-in duration-500">
+        
+        {/* Welcome Hero Banner */}
+        <section className="relative overflow-hidden bg-[color:var(--muted)] border border-[color:var(--border)] rounded-2xl p-6 sm:p-8 shadow-sm">
+          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#38bdf8] opacity-[0.03] rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[#3FA37E] opacity-[0.03] rounded-full blur-[80px] translate-y-1/3 -translate-x-1/4 pointer-events-none" />
+          
+          <div className="relative z-10 flex flex-col md:flex-row md:items-start md:justify-between gap-6">
             <div>
-              <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--foreground)]/55">Operations overview</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[color:var(--foreground)] sm:text-3xl">Hi {userName} ({userRole})</h2>
-              <p className="mt-3 max-w-3xl text-sm leading-7 text-[color:var(--foreground)]/72 sm:text-base">
-                Requests are grouped into a dedicated board, the map stays interactive, and analytics sit below as a clean secondary layer so the dashboard reads like a real operating console.
-              </p>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-[color:var(--surface)] border border-[color:var(--border)] mb-4">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--foreground)]/70 font-medium">Operations Live</span>
+              </div>
+              <h2 className="text-3xl font-bold tracking-tight text-[color:var(--foreground)] sm:text-4xl">
+                Hi {userName} <span className="text-[color:var(--foreground)]/50 font-medium text-2xl">({userRole})</span>
+              </h2>
             </div>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <MetricPill label="Total requests" value={summary.total} type="neutral" />
-              <MetricPill label="Open" value={summary.open} type="warning" />
-              <MetricPill label="Claimed" value={summary.claimed} type="info" />
-              <MetricPill label="Resolved" value={summary.resolved} type="success" />
-            </div>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-            <div className="glass-panel rounded-3xl p-6 flex flex-col justify-between transition duration-300 hover:-translate-y-0.5 hover:border-indigo-400/40">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-[color:var(--foreground)]/60">Active volunteers</p>
-                <div className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-400/10 text-indigo-400 text-sm">
-                  🤝
-                </div>
-              </div>
-              <div>
-                <p className="mt-4 text-4xl font-bold text-slate-900 dark:text-white tracking-tight">{summary.activeVolunteers}</p>
-                <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">Helpers actively claiming work in the field.</p>
-              </div>
-            </div>
-            <div className="glass-panel rounded-3xl p-6 flex flex-col justify-between transition duration-300 hover:-translate-y-0.5 hover:border-emerald-400/40">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-[color:var(--foreground)]/60">Resolution rate</p>
-                <div className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-400 text-sm">
-                  📈
-                </div>
-              </div>
-              <div>
-                <p className="mt-4 text-4xl font-bold text-slate-900 dark:text-white tracking-tight">{summary.resolutionRate}%</p>
-                <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">Percentage of requests successfully resolved.</p>
-              </div>
+            
+            {/* Actions aligned to the right corner of the banner */}
+            <div className="flex items-center gap-3">
+              <SOSButton />
+              <Link
+                href="/requests/new"
+                className="focus-ring flex items-center gap-2 rounded-full bg-[color:var(--foreground)] px-5 py-2 text-[12px] font-bold uppercase tracking-wider text-[color:var(--background)] transition hover:-translate-y-0.5 hover:bg-opacity-80 shadow-md"
+              >
+                <PlusIcon />
+                <span>New Request</span>
+              </Link>
             </div>
           </div>
         </section>
 
-        <section className="space-y-4">
+        {/* Global Unified Metrics Grid */}
+        <section className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
+          <StatCard label="Total" value={summary.total} color="neutral" icon="📋" delay="0" />
+          <StatCard label="Open" value={summary.open} color="amber" icon="🚨" delay="50" />
+          <StatCard label="Claimed" value={summary.claimed} color="sky" icon="⏳" delay="100" />
+          <StatCard label="Resolved" value={summary.resolved} color="emerald" icon="✅" delay="150" />
+          <StatCard label="Volunteers" value={summary.activeVolunteers} color="indigo" icon="🤝" delay="200" />
+          <StatCard label="Success" value={`${summary.resolutionRate}%`} color="violet" icon="📈" delay="250" />
+        </section>
+
+        {/* Map Workspace */}
+        <section className="space-y-4 pt-2">
           <div className="flex items-end justify-between gap-4 px-2">
             <div>
-              <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--foreground)]/55">Requests</p>
-              <h3 className="mt-1 text-xl font-semibold text-[color:var(--foreground)]">Live request board</h3>
+              <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--foreground)]/50 font-medium">Workspace</p>
+              <h3 className="mt-1 text-[18px] font-semibold text-[color:var(--foreground)]">Live Request Board</h3>
             </div>
-            <p className="hidden text-sm text-[color:var(--foreground)]/65 md:block">Filter, scan, and open any request without leaving the dashboard.</p>
+            <p className="hidden text-[13px] text-[color:var(--foreground)]/70 md:block">Filter, scan, and open any request without leaving the dashboard.</p>
           </div>
-          <RequestMap requests={requests} />
+          <div className="rounded-2xl overflow-hidden border border-[color:var(--border)] shadow-lg transition-all duration-500 hover:border-[color:var(--border-strong)] hover:shadow-[0_0_40px_-15px_rgba(56,189,248,0.1)]">
+            <RequestMap requests={requests} />
+          </div>
         </section>
       </div>
     </AppShell>
   );
 }
 
-function MetricPill({ label, value, type = "neutral" }: { label: string; value: number; type?: "neutral" | "warning" | "info" | "success" }) {
-  const styles = {
-    neutral: "border-[color:var(--border)] bg-slate-900/40 text-slate-300",
-    warning: "border-amber-500/20 bg-amber-500/10 text-amber-300",
-    info: "border-sky-500/20 bg-sky-500/10 text-sky-300",
-    success: "border-emerald-500/20 bg-emerald-500/10 text-emerald-300",
+function StatCard({ label, value, color = "neutral", icon, delay }: { label: string; value: string | number; color?: "neutral" | "amber" | "sky" | "emerald" | "indigo" | "violet"; icon: string; delay: string }) {
+  const colorMap = {
+    neutral: "text-[color:var(--foreground)] opacity-80 group-hover:opacity-100",
+    amber: "text-amber-500 group-hover:text-amber-400",
+    sky: "text-[#38bdf8] group-hover:text-sky-300",
+    emerald: "text-[#3FA37E] group-hover:text-emerald-400",
+    indigo: "text-indigo-400 group-hover:text-indigo-300",
+    violet: "text-violet-400 group-hover:text-violet-300",
+  };
+  
+  const borderMap = {
+    neutral: "hover:border-[color:var(--border-strong)]",
+    amber: "hover:border-amber-500/30",
+    sky: "hover:border-[#38bdf8]/30",
+    emerald: "hover:border-[#3FA37E]/40",
+    indigo: "hover:border-indigo-500/30",
+    violet: "hover:border-violet-500/30",
   };
 
   return (
-    <div className={`rounded-full border px-4 py-2 text-sm backdrop-blur-xl flex items-center gap-1.5 transition ${styles[type]}`}>
-      <span className="opacity-75">{label}: </span>
-      <span className="font-bold">{value}</span>
+    <div 
+      className={`group bg-[color:var(--muted)] border border-[color:var(--border)] rounded-2xl p-5 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg hover:bg-[color:var(--surface)] ${borderMap[color]}`}
+      style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[color:var(--foreground)]/50 transition-colors group-hover:text-[color:var(--foreground)]/70">{label}</p>
+        <span className="text-[16px] opacity-70 grayscale transition-all duration-300 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-110">{icon}</span>
+      </div>
+      <p className={`text-3xl font-bold tracking-tight transition-colors ${colorMap[color]}`}>{value}</p>
     </div>
   );
 }

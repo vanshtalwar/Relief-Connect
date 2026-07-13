@@ -25,19 +25,17 @@
 }
 
 html[data-theme="dark"] {
-  --background: #000000;
-  --foreground: #e5eefb;
-  --muted: #111827;
-  --panel: rgba(8, 8, 10, 0.82);
-  --panel-strong: rgba(8, 8, 10, 0.94);
-  --surface: rgba(10, 10, 12, 0.72);
-  --surface-strong: rgba(12, 12, 14, 0.94);
-  --border: rgba(148, 163, 184, 0.18);
-  --border-strong: rgba(148, 163, 184, 0.28);
-  --shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
-  --page-bg:
-    radial-gradient(circle at top, rgba(56, 189, 248, 0.1), transparent 28%),
-    linear-gradient(180deg, #000000 0%, #050505 55%, #0a0a0a 100%);
+  --background: #0D0E12;
+  --foreground: #EDEDED;
+  --muted: #1A1D24;
+  --panel: rgba(26, 29, 36, 0.82);
+  --panel-strong: rgba(26, 29, 36, 0.94);
+  --surface: rgba(19, 21, 26, 0.72);
+  --surface-strong: rgba(19, 21, 26, 0.94);
+  --border: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.12);
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  --page-bg: #0D0E12;
 }
 
 @theme inline {

@@ -8,10 +8,7 @@ import io from "socket.io-client";
 import { OfflineIndicator } from "./offline-indicator";
 import { AuthActions } from "./auth-actions";
 import { ThemeToggle } from "./theme-toggle";
-import { SOSButton } from "./sos-button";
-import { LowBandwidthToggle } from "./low-bandwidth-toggle";
 import { useTranslation } from "./i18n-provider";
-import type { Language } from "@/lib/i18n/dictionaries";
 
 const MapIcon = () => (
   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -72,7 +69,7 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
   const pathname = usePathname();
   const { data: session } = useSession();
   const [chatNotificationCount, setChatNotificationCount] = useState(0);
-  const { t, language, setLanguage } = useTranslation();
+  const { t } = useTranslation();
 
   const pathnameRef = useRef(pathname);
   useEffect(() => {
@@ -81,10 +78,10 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
 
   useEffect(() => {
     if (!session?.user?.id) return;
-    
+
     const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "";
     const socket = io(socketUrl);
-    
+
     socket.on("connect", () => {
       socket.emit("join_user_room", session.user.id);
     });
@@ -112,128 +109,116 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
   });
 
   return (
-    <div className="min-h-screen px-4 py-4 sm:px-6 lg:px-8">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
-        <header className="glass-panel rounded-3xl px-4 py-4 sm:px-6">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div className="space-y-1 xl:max-w-3xl">
+    <div className="min-h-screen bg-[color:var(--background)] flex flex-col font-sans relative">
+      {/* Top Bar Container */}
+      <div className="sticky top-5 z-50 w-full px-5 sm:px-8 flex items-center justify-between pointer-events-none">
+        
+        {/* LEFT: ReliefConnect Logo */}
+        <div className="flex items-center gap-3 pointer-events-auto">
+          <Link
+            href="/dashboard"
+            className="focus-ring flex items-center justify-center h-9 w-9 rounded-full bg-[#38bdf8]/10 text-[#38bdf8] transition-colors hover:bg-[#38bdf8]/20 shadow-sm"
+            aria-label="Go to dashboard home"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+          </Link>
+          <span className="hidden md:inline font-bold text-[color:var(--foreground)] text-[13px] uppercase tracking-[0.15em]">ReliefConnect</span>
+        </div>
+
+        {/* CENTER: Floating Pill Navbar (Tabs Only) */}
+        <header className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 md:absolute md:top-1/2 md:-translate-y-1/2 md:bottom-auto flex h-[52px] items-center justify-center rounded-full bg-[color:var(--muted)]/95 border border-[color:var(--border)] px-2 sm:px-3 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)] md:shadow-2xl backdrop-blur-xl pointer-events-auto w-[90%] sm:w-auto overflow-x-auto no-scrollbar">
+          <nav className="flex items-center gap-1 w-full sm:w-auto">
+            {visibleNavigation.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`focus-ring shrink-0 flex items-center justify-center gap-2 rounded-full px-4 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition-all ${
+                    isActive
+                      ? "text-[color:var(--background)] bg-[color:var(--foreground)] shadow-sm"
+                      : "text-[color:var(--foreground)]/50 hover:text-[color:var(--foreground)] hover:bg-[color:var(--foreground)]/10"
+                  }`}
+                >
+                  <span className="hidden sm:inline-block">{item.icon}</span>
+                  <span>{t.common[item.labelKey as keyof typeof t.common]}</span>
+                </Link>
+              );
+            })}
+
+            {/* Notifications */}
+            {session?.user && (
               <Link
-                href="/dashboard"
-                className="focus-ring inline-flex items-center gap-2 rounded-full border border-sky-400/25 bg-sky-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-600 transition hover:-translate-y-0.5 hover:bg-sky-400/15 dark:text-sky-200"
-                aria-label="Go to dashboard home"
+                href="/notifications"
+                onClick={() => setChatNotificationCount(0)}
+                className={`relative shrink-0 focus-ring flex items-center justify-center gap-2 rounded-full px-4 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition-all ${
+                  pathname === "/notifications"
+                    ? "text-[color:var(--background)] bg-[color:var(--foreground)] shadow-sm"
+                    : "text-[color:var(--foreground)]/50 hover:text-[color:var(--foreground)] hover:bg-[color:var(--foreground)]/10"
+                }`}
               >
-                ReliefConnect
+                <div className="relative hidden sm:block">
+                  <BellIcon />
+                  {chatNotificationCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-1.5 w-1.5 items-center justify-center rounded-full bg-red-500 ring-2 ring-[color:var(--muted)]" />
+                  )}
+                </div>
+                <span>Notifications</span>
+                {/* Mobile red dot fallback */}
+                {chatNotificationCount > 0 && <span className="sm:hidden h-1.5 w-1.5 rounded-full bg-red-500 ml-1" />}
               </Link>
-              <h1 className="text-2xl font-semibold tracking-tight text-[color:var(--foreground)] sm:text-3xl">{title}</h1>
-              <p className="max-w-3xl text-sm leading-6 text-[color:var(--foreground)]/75 sm:text-base">{subtitle}</p>
-            </div>
-            <div className="flex items-center gap-3 overflow-x-auto pb-1 xl:pb-0">
-              <OfflineIndicator />
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value as Language)}
-                className="focus-ring cursor-pointer rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-[color:var(--foreground)] shadow-sm backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-sky-400/40 hover:bg-[color:var(--surface-strong)]"
-                aria-label="Select Language"
+            )}
+
+            {/* Messages */}
+            {session?.user && (
+              <Link
+                href="/messages"
+                className={`shrink-0 focus-ring flex items-center justify-center gap-2 rounded-full px-4 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition-all ${
+                  pathname.startsWith("/messages")
+                    ? "text-[color:var(--background)] bg-[color:var(--foreground)] shadow-sm"
+                    : "text-[color:var(--foreground)]/50 hover:text-[color:var(--foreground)] hover:bg-[color:var(--foreground)]/10"
+                }`}
               >
-                <option value="en">EN</option>
-                <option value="hi">HI</option>
-              </select>
-              <ThemeToggle />
-              <LowBandwidthToggle />
-              <AuthActions />
-            </div>
-          </div>
-          <nav className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-[color:var(--border)] pt-4">
-            <div className="flex flex-nowrap items-center gap-2 overflow-x-auto pb-1">
-              {visibleNavigation.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`focus-ring shrink-0 flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition hover:-translate-y-0.5 ${
-                      isActive
-                        ? "border-sky-400/40 bg-sky-400/15 text-sky-400 dark:text-sky-300 font-semibold"
-                        : "border-[color:var(--border)] bg-[color:var(--surface)] text-[color:var(--foreground)]/90 hover:border-sky-400/30 hover:bg-[color:var(--surface-strong)]"
-                    }`}
-                  >
-                    {item.icon}
-                    <span>{t.common[item.labelKey as keyof typeof t.common]}</span>
-                  </Link>
-                );
-              })}
+                <span className="hidden sm:inline-block"><ChatIcon /></span>
+                <span>Messages</span>
+              </Link>
+            )}
 
-              {/* Notifications */}
-              {session?.user && (
-                <Link
-                  href="/notifications"
-                  onClick={() => setChatNotificationCount(0)}
-                  className={`relative focus-ring shrink-0 flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition hover:-translate-y-0.5 ${
-                    pathname === "/notifications"
-                      ? "border-sky-400/40 bg-sky-400/15 text-sky-400 dark:text-sky-300 font-semibold"
-                      : "border-[color:var(--border)] bg-[color:var(--surface)] text-[color:var(--foreground)]/90 hover:border-sky-400/30 hover:bg-[color:var(--surface-strong)]"
-                  }`}
-                >
-                  <div className="relative">
-                    <BellIcon />
-                    {chatNotificationCount > 0 && (
-                      <span className="absolute -top-1 -right-1 flex h-2 w-2 items-center justify-center rounded-full bg-red-500 ring-2 ring-[color:var(--background)]">
-                        <span className="sr-only">{chatNotificationCount} unread</span>
-                      </span>
-                    )}
-                  </div>
-                  <span>Notifications</span>
-                </Link>
-              )}
-
-              {/* Messages */}
-              {session?.user && (
-                <Link
-                  href="/messages"
-                  className={`relative focus-ring shrink-0 flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition hover:-translate-y-0.5 ${
-                    pathname.startsWith("/messages")
-                      ? "border-sky-400/40 bg-sky-400/15 text-sky-400 dark:text-sky-300 font-semibold"
-                      : "border-[color:var(--border)] bg-[color:var(--surface)] text-[color:var(--foreground)]/90 hover:border-sky-400/30 hover:bg-[color:var(--surface-strong)]"
-                  }`}
-                >
-                  <ChatIcon />
-                  <span>Messages</span>
-                </Link>
-              )}
-
-              {/* Profile */}
-              {session?.user && (
-                <Link
-                  href="/profile"
-                  className={`focus-ring shrink-0 flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition hover:-translate-y-0.5 ${
-                    pathname === "/profile"
-                      ? "border-sky-400/40 bg-sky-400/15 text-sky-400 dark:text-sky-300 font-semibold"
-                      : "border-[color:var(--border)] bg-[color:var(--surface)] text-[color:var(--foreground)]/90 hover:border-sky-400/30 hover:bg-[color:var(--surface-strong)]"
-                  }`}
-                >
+            {/* Profile */}
+            {session?.user && (
+              <Link
+                href="/profile"
+                className={`shrink-0 focus-ring flex items-center justify-center gap-2 rounded-full px-4 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition-all ${
+                  pathname === "/profile"
+                    ? "text-[color:var(--background)] bg-[color:var(--foreground)] shadow-sm"
+                    : "text-[color:var(--foreground)]/50 hover:text-[color:var(--foreground)] hover:bg-[color:var(--foreground)]/10"
+                }`}
+              >
+                <span className="hidden sm:inline-block">
                   {session.user.image ? (
-                    <img src={session.user.image} alt="Profile DP" className="h-4 w-4 rounded-full object-cover" />
+                    <img src={session.user.image} alt="DP" className="h-4 w-4 rounded-full object-cover" />
                   ) : (
                     <UserIcon />
                   )}
-                  <span>Profile</span>
-                </Link>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              <SOSButton />
-              <Link
-                href="/requests/new"
-                className="focus-ring shrink-0 flex items-center gap-2 rounded-full bg-sky-400 px-5 py-2.5 text-sm font-semibold text-slate-950 shadow-md shadow-sky-400/10 transition hover:-translate-y-0.5 hover:bg-sky-300"
-              >
-                <PlusIcon />
-                <span>{t.common.newRequest}</span>
+                </span>
+                <span>Profile</span>
               </Link>
-            </div>
+            )}
           </nav>
         </header>
-        <main className="flex-1">{children}</main>
+
+        {/* RIGHT: Theme & Logout */}
+        <div className="flex items-center gap-3 pointer-events-auto">
+          <ThemeToggle />
+          <AuthActions />
+        </div>
       </div>
+
+      {/* Main Content Area */}
+      {/* On mobile, pb-24 adds space for the fixed bottom bar */}
+      <main className="mx-auto flex w-full flex-1 max-w-7xl flex-col gap-5 px-4 pt-16 pb-24 md:pb-8 sm:px-6 lg:px-8">
+        {children}
+      </main>
     </div>
   );
 }

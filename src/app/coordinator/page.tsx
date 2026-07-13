@@ -28,12 +28,12 @@ export default async function CoordinatorPage() {
         
         <div className="grid gap-5 lg:grid-cols-3 items-start">
           {/* Column 1: Broadcast Alert */}
-          <section className="bg-[#1A1D24] border border-[rgba(255,255,255,0.06)] rounded-xl overflow-hidden shadow-sm h-full flex flex-col">
-            <div className="border-b border-[rgba(255,255,255,0.06)] px-4 py-3 bg-[#13151A]">
-              <h2 className="text-[13px] font-medium text-[#EDEDED] tracking-wide">Broadcast Alert</h2>
+          <section className="bg-[color:var(--muted)] border border-[color:var(--border)] rounded-xl overflow-hidden shadow-sm h-full flex flex-col">
+            <div className="border-b border-[color:var(--border)] px-4 py-3 bg-[color:var(--surface)]">
+              <h2 className="text-[13px] font-medium text-[color:var(--foreground)] tracking-wide">Broadcast Alert</h2>
             </div>
             <div className="p-4 flex-1">
-              <p className="mb-4 text-[12px] text-[#A0A0A0] leading-relaxed">Target a geographic zone and push an emergency banner over the realtime channel.</p>
+              <p className="mb-4 text-[12px] text-[color:var(--foreground)]/70 leading-relaxed">Target a geographic zone and push an emergency banner over the realtime channel.</p>
               <BroadcastAlertForm />
             </div>
           </section>
@@ -44,9 +44,9 @@ export default async function CoordinatorPage() {
           </div>
 
           {/* Column 3: Verification Queue */}
-          <section className="bg-[#1A1D24] border border-[rgba(255,255,255,0.06)] rounded-xl overflow-hidden shadow-sm h-full flex flex-col">
-            <div className="border-b border-[rgba(255,255,255,0.06)] px-4 py-3 bg-[#13151A]">
-              <h2 className="text-[13px] font-medium text-[#EDEDED] tracking-wide">Verification Queue</h2>
+          <section className="bg-[color:var(--muted)] border border-[color:var(--border)] rounded-xl overflow-hidden shadow-sm h-full flex flex-col">
+            <div className="border-b border-[color:var(--border)] px-4 py-3 bg-[color:var(--surface)]">
+              <h2 className="text-[13px] font-medium text-[color:var(--foreground)] tracking-wide">Verification Queue</h2>
             </div>
             <div className="p-4 flex-1 overflow-x-auto">
               <VerificationQueue />

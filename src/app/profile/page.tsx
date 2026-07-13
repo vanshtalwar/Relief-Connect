@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { AppShell } from "@/components/app-shell";
 import { useSession } from "next-auth/react";
+import { useTranslation } from "@/components/i18n-provider";
+import type { Language } from "@/lib/i18n/dictionaries";
 
 export default function ProfilePage() {
   const { data: session, status, update } = useSession();
@@ -141,26 +143,42 @@ export default function ProfilePage() {
     }
   };
 
+  const { language, setLanguage } = useTranslation();
+
   return (
     <AppShell title="Profile" subtitle="Your role, identity, and session controls in one place.">
-      <section className="grid gap-6 lg:grid-cols-[1fr_1fr]">
-        <div className="glass-panel rounded-3xl p-5 flex flex-col justify-between">
+      <section className={`grid gap-6 ${session?.user?.role === "VOLUNTEER" ? "lg:grid-cols-3" : "lg:grid-cols-2"}`}>
+        <div className="bg-[color:var(--muted)] border border-[color:var(--border)] shadow-sm rounded-2xl p-6 flex flex-col justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Account details</h2>
-            <dl className="mt-4 space-y-4 text-sm">
+            <h2 className="text-lg font-semibold text-[color:var(--foreground)]">Account details</h2>
+            <dl className="mt-5 space-y-4 text-sm">
               <Row label="Status" value={status === "loading" ? "Loading..." : status} />
               <Row label="Name" value={session?.user?.name ?? "Demo user"} />
               <Row label="Email" value={session?.user?.email ?? "victim@reliefconnect.dev"} />
               <Row label="Phone" value={session?.user?.phone ?? "Not provided"} />
-              <div className="flex items-center justify-between gap-4 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3">
-                <dt className="text-slate-500 dark:text-slate-400">Role</dt>
+              <div className="flex items-center justify-between gap-4 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3">
+                <dt className="text-[color:var(--foreground)]/70">Language</dt>
+                <dd className="text-right">
+                  <select
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value as Language)}
+                    className="focus-ring cursor-pointer rounded-md border border-[color:var(--border)] bg-[color:var(--muted)] px-3 py-1.5 text-[12px] font-semibold text-[color:var(--foreground)] transition-colors hover:border-[#38bdf8]/50 outline-none"
+                    aria-label="Select Language"
+                  >
+                    <option value="en">English (EN)</option>
+                    <option value="hi">Hindi (HI)</option>
+                  </select>
+                </dd>
+              </div>
+              <div className="flex items-center justify-between gap-4 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3">
+                <dt className="text-[color:var(--foreground)]/70">Role</dt>
                 <dd className="text-right flex items-center gap-3">
-                  <span className="font-medium text-slate-900 dark:text-white">{session?.user?.role ?? "VICTIM"}</span>
+                  <span className="font-medium text-[color:var(--foreground)]">{session?.user?.role ?? "VICTIM"}</span>
                   {session?.user?.role !== "COORDINATOR" && (
                     <button
                       onClick={handleRoleToggle}
                       disabled={isUpdatingRole}
-                      className="focus-ring rounded-full bg-sky-500/10 px-3 py-1 text-xs font-semibold text-sky-600 transition hover:bg-sky-500/20 disabled:opacity-50 dark:text-sky-400"
+                      className="focus-ring rounded-md bg-[#38bdf8]/10 px-3 py-1.5 text-[12px] font-semibold text-[#38bdf8] transition-colors hover:bg-[#38bdf8]/20 disabled:opacity-50 border border-[#38bdf8]/20"
                     >
                       {isUpdatingRole ? "Switching..." : `Switch to ${session?.user?.role === "VICTIM" ? "VOLUNTEER" : "VICTIM"}`}
                     </button>
@@ -173,42 +191,42 @@ export default function ProfilePage() {
         </div>
 
         {session?.user?.role === "VOLUNTEER" && (
-          <div className="glass-panel rounded-3xl p-5 flex flex-col justify-between">
+          <div className="bg-[color:var(--muted)] border border-[color:var(--border)] shadow-sm rounded-2xl p-6 flex flex-col justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Resource Inventory</h2>
-              <p className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+              <h2 className="text-lg font-semibold text-[color:var(--foreground)]">Resource Inventory</h2>
+              <p className="mt-2 text-[13px] leading-relaxed text-[color:var(--foreground)]/70">
                 List the supplies and equipment you carry (comma separated). This helps coordinators assign you to relevant tasks.
               </p>
-              <div className="mt-4">
+              <div className="mt-5">
                 <textarea
                   value={inventory}
                   onChange={(e) => setInventory(e.target.value)}
                   placeholder="e.g., First Aid Kit, Flashlight, 5L Water, Power Bank"
-                  className="input min-h-[100px]"
+                  className="w-full min-h-[100px] rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] p-4 text-[14px] text-[color:var(--foreground)] placeholder:text-[color:var(--foreground)]/50 focus:outline-none focus:border-[#38bdf8]/50 focus:ring-1 focus:ring-[#38bdf8]/50 transition-colors"
                 />
                 <button
                   onClick={handleInventoryUpdate}
                   disabled={isUpdatingInventory}
-                  className="mt-3 focus-ring rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50 hover:bg-emerald-400 transition"
+                  className="mt-4 focus-ring rounded-md bg-[#3FA37E] px-5 py-2.5 text-[13px] font-semibold text-slate-950 transition hover:-translate-y-0.5 hover:bg-emerald-400 disabled:opacity-50"
                 >
                   {isUpdatingInventory ? "Updating..." : "Save Inventory"}
                 </button>
               </div>
             </div>
 
-            <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Privacy & Consent</h2>
-              <div className="mt-4 flex items-start gap-3">
+            <div className="mt-8 pt-6 border-t border-[color:var(--border)]">
+              <h2 className="text-lg font-semibold text-[color:var(--foreground)]">Privacy & Consent</h2>
+              <div className="mt-5 flex items-start gap-3">
                 <input
                   type="checkbox"
                   id="locationConsent"
                   checked={locationConsent}
                   onChange={handleConsentToggle}
                   disabled={isUpdatingConsent}
-                  className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
+                  className="mt-1 h-4 w-4 rounded border-[color:var(--border-strong)] bg-[color:var(--surface)] text-[#38bdf8] focus:ring-[#38bdf8]/50"
                 />
-                <label htmlFor="locationConsent" className="text-sm text-slate-600 dark:text-slate-400">
-                  <span className="block font-medium text-slate-900 dark:text-slate-300">Allow Background Location Tracking</span>
+                <label htmlFor="locationConsent" className="text-[13px] text-[color:var(--foreground)]/70">
+                  <span className="block font-medium text-[color:var(--foreground)] mb-1">Allow Background Location Tracking</span>
                   I consent to having my location tracked while I have active assigned requests. My location data is used exclusively to update the victim on my proximity, and will automatically cease tracking when all my requests are resolved.
                 </label>
               </div>
@@ -216,15 +234,15 @@ export default function ProfilePage() {
           </div>
         )}
 
-        <div className="glass-panel rounded-3xl p-5 flex flex-col justify-between">
+        <div className="bg-[color:var(--muted)] border border-[color:var(--border)] shadow-sm rounded-2xl p-6 flex flex-col justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Profile photo</h2>
-            <p className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+            <h2 className="text-lg font-semibold text-[color:var(--foreground)]">Profile photo</h2>
+            <p className="mt-2 text-[13px] leading-relaxed text-[color:var(--foreground)]/70">
               Upload a profile image to represent your identity.
             </p>
             
-            <div className="mt-6 flex flex-col items-center gap-4">
-              <div className="relative h-32 w-32 overflow-hidden rounded-full border-4 border-sky-400/20 bg-slate-900/10 shadow-xl flex items-center justify-center">
+            <div className="mt-8 flex flex-col items-center gap-6">
+              <div className="relative h-32 w-32 overflow-hidden rounded-full border-[3px] border-[#38bdf8]/30 bg-[color:var(--surface)] shadow-lg flex items-center justify-center">
                 {session?.user?.image ? (
                   <img
                     src={session.user.image}
@@ -232,12 +250,12 @@ export default function ProfilePage() {
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="text-4xl text-slate-400">👤</div>
+                  <div className="text-4xl text-[color:var(--foreground)]/50">👤</div>
                 )}
               </div>
 
               <div className="w-full max-w-xs">
-                <label className="block text-center text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 cursor-pointer bg-[color:var(--surface)] hover:bg-[color:var(--surface-strong)] transition rounded-full border border-[color:var(--border)] px-4 py-2">
+                <label className="block text-center text-[13px] font-semibold text-[color:var(--foreground)] cursor-pointer bg-[color:var(--surface-strong)] hover:bg-[color:var(--border)] transition-colors rounded-md border border-[color:var(--border)] px-4 py-2.5">
                   {isUploading ? "Uploading photo..." : "Upload new photo"}
                   <input
                     type="file"
@@ -250,7 +268,7 @@ export default function ProfilePage() {
               </div>
 
               {error && (
-                <p className="text-xs text-red-500 font-medium">{error}</p>
+                <p className="text-[13px] text-red-500 font-medium">{error}</p>
               )}
             </div>
           </div>
@@ -262,9 +280,9 @@ export default function ProfilePage() {
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3">
-      <dt className="text-slate-500 dark:text-slate-400">{label}</dt>
-      <dd className="text-right font-medium text-slate-900 dark:text-white">{value}</dd>
+    <div className="flex items-center justify-between gap-4 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3">
+      <dt className="text-[color:var(--foreground)]/70">{label}</dt>
+      <dd className="text-right font-medium text-[color:var(--foreground)]">{value}</dd>
     </div>
   );
 }

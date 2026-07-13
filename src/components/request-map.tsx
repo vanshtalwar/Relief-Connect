@@ -117,7 +117,7 @@ function RecenterControl({ userLocation }: { userLocation: {lat: number, lng: nu
             e.stopPropagation();
             map.setView([userLocation.lat, userLocation.lng], 15, { animate: true, duration: 1 });
           }}
-          className="flex items-center gap-2 bg-[#1A1D24] text-[#EDEDED] px-3 py-2 text-[12px] font-semibold tracking-wide rounded-md shadow-md border border-[rgba(255,255,255,0.06)] hover:bg-[#2A2E38] transition-colors"
+          className="flex items-center gap-2 bg-[color:var(--muted)] text-[color:var(--foreground)] px-3 py-2 text-[12px] font-semibold tracking-wide rounded-md shadow-md border border-[color:var(--border)] hover:bg-[color:var(--surface)] transition-colors"
           title="Recenter on my location"
         >
           📍 Recenter on Me
@@ -188,9 +188,9 @@ export function RequestMap({ requests }: { requests: any[] }) {
   }, [category, liveRequests, urgency]);
 
   return (
-    <div className="w-full">
-      <section className="glass-panel overflow-hidden rounded-3xl backdrop-blur-xl bg-[color:var(--surface)]/45">
-        <div className="border-b border-[color:var(--border)] px-4 py-4 sm:px-5">
+    <div className="w-full h-full">
+      <section className="bg-[color:var(--muted)] overflow-hidden flex flex-col h-full w-full">
+        <div className="border-b border-[color:var(--border)] bg-[color:var(--surface)] px-5 py-4">
           <div className="flex flex-wrap items-center gap-2">
             <FilterPill label={`All (${filteredRequests.length})`} active={category === "ALL" && urgency === "ALL"} onClick={() => {
               setCategory("ALL");
@@ -199,10 +199,10 @@ export function RequestMap({ requests }: { requests: any[] }) {
             {Object.keys(categoryLabels).map((value) => (
               <FilterPill key={value} label={categoryLabels[value as Category]} active={category === value} onClick={() => setCategory(value as Category)} />
             ))}
-            <div className="ml-auto flex items-center gap-2">
-              <span className="text-xs uppercase tracking-[0.2em] text-[color:var(--foreground)]/55">Urgency</span>
-              <select className="focus-ring rounded-full border border-[color:var(--border)] bg-[color:var(--surface)]/50 backdrop-blur-md px-3 py-2 text-sm text-[color:var(--foreground)]" value={urgency} onChange={(event) => setUrgency(event.target.value as Urgency | "ALL")}>
-                <option value="ALL">All</option>
+            <div className="ml-auto flex items-center gap-3">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[color:var(--foreground)]/50">Urgency</span>
+              <select className="focus-ring cursor-pointer rounded-md border border-[color:var(--border)] bg-[color:var(--muted)] px-3 py-1.5 text-[12px] font-semibold text-[color:var(--foreground)] transition-colors hover:border-[color:var(--border-strong)] outline-none" value={urgency} onChange={(event) => setUrgency(event.target.value as Urgency | "ALL")}>
+                <option value="ALL">All Levels</option>
                 {Object.keys(urgencyMeta).map((value) => (
                   <option key={value} value={value}>
                     {urgencyMeta[value as Urgency].label}
@@ -212,20 +212,20 @@ export function RequestMap({ requests }: { requests: any[] }) {
             </div>
           </div>
         </div>
-        <div className="grid gap-0 xl:grid-cols-[0.9fr_1.1fr]">
-          <div className="max-h-[560px] overflow-y-auto border-b border-[color:var(--border)] xl:border-b-0 xl:border-r xl:border-[color:var(--border)]">
+        <div className="grid gap-0 xl:grid-cols-[0.8fr_1.2fr]">
+          <div className="h-[400px] overflow-y-auto safe-scrollbar border-b border-[color:var(--border)] xl:border-b-0 xl:border-r bg-[color:var(--muted)]">
             <div className="grid gap-3 p-4 sm:p-5">
               {filteredRequests.map((request) => (
                 <RequestCard key={request.id} request={request} />
               ))}
             </div>
           </div>
-          <div className="h-[560px] bg-[color:var(--background)]/20">
+          <div className="h-[400px] bg-[color:var(--background)] relative z-0">
             {isLowBandwidth ? (
-              <div className="h-full flex flex-col items-center justify-center p-8 text-center text-[color:var(--foreground)]/60">
+              <div className="h-full flex flex-col items-center justify-center p-8 text-center text-[color:var(--foreground)]/50">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                 <p className="font-semibold text-lg text-[color:var(--foreground)]">Low Bandwidth Mode Active</p>
-                <p className="mt-2 text-sm max-w-md">Live map tracking is disabled to conserve data. Please use the list view to coordinate effectively.</p>
+                <p className="mt-2 text-[13px] max-w-md">Live map tracking is disabled to conserve data. Please use the list view to coordinate effectively.</p>
               </div>
             ) : (
               <>
