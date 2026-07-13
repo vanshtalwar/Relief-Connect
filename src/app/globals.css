@@ -112,3 +112,12 @@ body {
   border-color: rgba(56, 189, 248, 0.7);
   box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18);
 }
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}

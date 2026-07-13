@@ -134,7 +134,7 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`focus-ring shrink-0 flex items-center justify-center gap-1.5 md:gap-2 rounded-full px-3 md:px-4 py-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.1em] transition-all ${
+                  className={`focus-ring shrink-0 flex items-center justify-center gap-1 md:gap-1.5 rounded-full px-2 md:px-3 py-2 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.05em] transition-all ${
                     isActive
                       ? "text-[color:var(--background)] bg-[color:var(--foreground)] shadow-sm"
                       : "text-[color:var(--foreground)]/50 hover:text-[color:var(--foreground)] hover:bg-[color:var(--foreground)]/10"
@@ -151,7 +151,7 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
               <Link
                 href="/notifications"
                 onClick={() => setChatNotificationCount(0)}
-                className={`relative shrink-0 focus-ring flex items-center justify-center gap-1.5 md:gap-2 rounded-full px-3 md:px-4 py-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.1em] transition-all ${
+                className={`relative shrink-0 focus-ring flex items-center justify-center gap-1 md:gap-1.5 rounded-full px-2 md:px-3 py-2 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.05em] transition-all ${
                   pathname === "/notifications"
                     ? "text-[color:var(--background)] bg-[color:var(--foreground)] shadow-sm"
                     : "text-[color:var(--foreground)]/50 hover:text-[color:var(--foreground)] hover:bg-[color:var(--foreground)]/10"
@@ -173,7 +173,7 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
             {session?.user && (
               <Link
                 href="/messages"
-                className={`shrink-0 focus-ring flex items-center justify-center gap-1.5 md:gap-2 rounded-full px-3 md:px-4 py-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.1em] transition-all ${
+                className={`shrink-0 focus-ring flex items-center justify-center gap-1 md:gap-1.5 rounded-full px-2 md:px-3 py-2 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.05em] transition-all ${
                   pathname.startsWith("/messages")
                     ? "text-[color:var(--background)] bg-[color:var(--foreground)] shadow-sm"
                     : "text-[color:var(--foreground)]/50 hover:text-[color:var(--foreground)] hover:bg-[color:var(--foreground)]/10"
@@ -188,7 +188,7 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
             {session?.user && (
               <Link
                 href="/profile"
-                className={`shrink-0 focus-ring flex items-center justify-center gap-1.5 md:gap-2 rounded-full px-3 md:px-4 py-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.1em] transition-all ${
+                className={`shrink-0 focus-ring flex items-center justify-center gap-1 md:gap-1.5 rounded-full px-2 md:px-3 py-2 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.05em] transition-all ${
                   pathname === "/profile"
                     ? "text-[color:var(--background)] bg-[color:var(--foreground)] shadow-sm"
                     : "text-[color:var(--foreground)]/50 hover:text-[color:var(--foreground)] hover:bg-[color:var(--foreground)]/10"
