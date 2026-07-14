@@ -10,6 +10,7 @@ import { useSession } from "next-auth/react";
 import "leaflet/dist/leaflet.css";
 import { formatDistance, haversineDistanceKm } from "@/lib/geo";
 import { useMap } from "react-leaflet";
+import ReactDOM from "react-dom";
 
 type LeafletComponentProps = Record<string, unknown>;
 
@@ -66,6 +67,7 @@ const userIcon = typeof window !== "undefined" ? require("leaflet").icon({
 function MapBoundsUpdater({ requests, boundsKey, userLocation }: { requests: any[], boundsKey?: string, userLocation?: {lat: number, lng: number} | null }) {
   const map = useMap();
   const hasZoomedToUserRef = React.useRef(false);
+  const userHasLocation = userLocation !== null;
 
   useEffect(() => {
     if (!requests || requests.length === 0) {
@@ -80,9 +82,12 @@ function MapBoundsUpdater({ requests, boundsKey, userLocation }: { requests: any
     const lngs = requests.map((r) => r.longitude);
 
     if (userLocation && !hasZoomedToUserRef.current) {
+      hasZoomedToUserRef.current = true;
+    }
+
+    if (userLocation) {
       lats.push(userLocation.lat);
       lngs.push(userLocation.lng);
-      hasZoomedToUserRef.current = true;
     }
 
     const minLat = Math.min(...lats);
@@ -90,39 +95,48 @@ function MapBoundsUpdater({ requests, boundsKey, userLocation }: { requests: any
     const minLng = Math.min(...lngs);
     const maxLng = Math.max(...lngs);
 
-    map.fitBounds(
-      [
-        [minLat, minLng],
-        [maxLat, maxLng]
-      ],
-      { padding: [50, 50], maxZoom: 15, animate: true, duration: 1 }
-    );
+    if (lats.length > 0 && lngs.length > 0) {
+      map.fitBounds(
+        [
+          [minLat, minLng],
+          [maxLat, maxLng]
+        ],
+        { padding: [50, 50], maxZoom: 15, animate: true, duration: 1 }
+      );
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [boundsKey, map, userLocation]);
+  }, [boundsKey, map, userHasLocation]);
   return null;
 }
 
 function RecenterControl({ userLocation }: { userLocation: {lat: number, lng: number} | null }) {
   const map = useMap();
+  const [controlContainer, setControlContainer] = useState<HTMLElement | null>(null);
   
-  if (!userLocation) return null;
+  useEffect(() => {
+    const container = map.getContainer().querySelector('.leaflet-bottom.leaflet-left');
+    if (container) {
+      setControlContainer(container as HTMLElement);
+    }
+  }, [map]);
 
-  return (
-    <div className="leaflet-bottom leaflet-left" style={{ zIndex: 1000, pointerEvents: 'auto', marginBottom: '20px', marginLeft: '10px' }}>
-      <div className="leaflet-control">
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            map.setView([userLocation.lat, userLocation.lng], 15, { animate: true, duration: 1 });
-          }}
-          className="flex items-center gap-2 bg-[color:var(--muted)] text-[color:var(--foreground)] px-3 py-2 text-[12px] font-semibold tracking-wide rounded-md shadow-md border border-[color:var(--border)] hover:bg-[color:var(--surface)] transition-colors"
-          title="Recenter on my location"
-        >
-          📍 Recenter on Me
-        </button>
-      </div>
-    </div>
+  if (!userLocation || !controlContainer) return null;
+
+  return ReactDOM.createPortal(
+    <div className="leaflet-control" style={{ pointerEvents: 'auto', marginBottom: '20px', marginLeft: '10px' }}>
+      <button
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          map.setView([userLocation.lat, userLocation.lng], 15, { animate: true, duration: 1 });
+        }}
+        className="flex items-center gap-2 bg-[color:var(--surface)] text-[color:var(--foreground)] px-3 py-2 text-[12px] font-semibold tracking-wide rounded-md shadow-md border border-[color:var(--border)] hover:bg-[color:var(--surface-strong)] transition-colors"
+        title="Recenter on my location"
+      >
+        📍 Recenter on Me
+      </button>
+    </div>,
+    controlContainer
   );
 }
 
@@ -214,14 +228,14 @@ export function RequestMap({ requests }: { requests: any[] }) {
           </div>
         </div>
         <div className="flex flex-col xl:grid xl:grid-cols-[0.8fr_1.2fr] gap-4 xl:gap-0 p-4 xl:p-0">
-          <div className="h-[400px] overflow-y-auto safe-scrollbar rounded-3xl xl:rounded-none border border-[color:var(--border)] xl:border-t-0 xl:border-l-0 xl:border-b-0 xl:border-r bg-[color:var(--surface)] xl:bg-[color:var(--muted)]">
-            <div className="grid gap-3 p-4 sm:p-5">
+          <div className="h-[350px] sm:h-[450px] xl:h-[600px] overflow-y-auto safe-scrollbar rounded-3xl xl:rounded-none border border-[color:var(--border)] xl:border-t-0 xl:border-l-0 xl:border-b-0 xl:border-r bg-[color:var(--surface)] xl:bg-[color:var(--muted)]">
+            <div className="grid grid-cols-1 gap-3 p-4 sm:p-5">
               {filteredRequests.map((request) => (
                 <RequestCard key={request.id} request={request} />
               ))}
             </div>
           </div>
-          <div className="h-[400px] bg-[color:var(--background)] relative z-10 rounded-3xl xl:rounded-none overflow-hidden border border-[color:var(--border)] xl:border-0">
+          <div className="h-[350px] sm:h-[450px] xl:h-[600px] bg-[color:var(--background)] relative z-10 rounded-3xl xl:rounded-none overflow-hidden border border-[color:var(--border)] xl:border-0">
             <>
                 <style>{`
                   .volunteer-marker-icon {

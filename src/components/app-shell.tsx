@@ -99,15 +99,28 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
       <div className="sticky top-5 z-50 w-full px-5 sm:px-8 flex items-center justify-between pointer-events-none">
         
         {/* LEFT: ReliefConnect Logo */}
-        <div className="flex items-center gap-3 pointer-events-auto">
+        <div className="flex items-center pointer-events-auto">
           <Link
             href="/dashboard"
-            className="focus-ring flex items-center justify-center h-9 w-9 rounded-full bg-[#38bdf8]/10 text-[#38bdf8] transition-colors hover:bg-[#38bdf8]/20 shadow-sm"
+            className="focus-ring flex items-center gap-2.5 sm:gap-3 transition-all duration-300 hover:scale-[1.02] group"
             aria-label="Go to dashboard home"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            {/* Stylish Unique Icon */}
+            <div className="relative flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 to-emerald-400 shadow-[0_8px_20px_-6px_rgba(56,189,248,0.5)]">
+              <div className="absolute inset-0 rounded-xl ring-1 ring-inset ring-white/20"></div>
+              {/* Unique abstract diamond rescue cross */}
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2L2 12l10 10 10-10L12 2z" />
+                <path d="M12 8v8" />
+                <path d="M8 12h8" />
+              </svg>
+            </div>
+            
+            {/* Premium Typography - Perfectly Aligned */}
+            <span className="font-black text-[17px] sm:text-[22px] tracking-tight text-[color:var(--foreground)] mt-0.5">
+              Relief<span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-emerald-400">Connect</span>
+            </span>
           </Link>
-          <span className="hidden md:inline font-bold text-[color:var(--foreground)] text-[13px] uppercase tracking-[0.15em]">ReliefConnect</span>
         </div>
 
         {/* CENTER: Floating Pill Navbar (Tabs Only) */}

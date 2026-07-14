@@ -7,6 +7,11 @@ import { BroadcastAlertForm } from "@/components/broadcast-alert-form";
 import { VerificationQueue } from "@/components/verification-queue";
 import { buildCoordinatorSummary } from "@/lib/analytics";
 
+export const metadata = {
+  title: "Command Center",
+  description: "Manage global operations, verification queues, and broadcast alerts.",
+};
+
 export default async function CoordinatorPage() {
   const session = await getServerSession(authOptions);
 

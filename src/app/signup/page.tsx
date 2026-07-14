@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { SignupForm } from "@/components/signup-form";
 
-export default function SignupPage() {
+export const metadata = {
+  title: "Create Account",
+  description: "Join ReliefConnect to get or give help during disasters.",
+};
+
+export default async function SignupPage() {
   return (
     <div className="relative flex min-h-screen flex-col">
       <header className="absolute top-4 left-4 z-10 sm:top-8 sm:left-8">

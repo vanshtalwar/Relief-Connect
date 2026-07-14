@@ -15,9 +15,24 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ReliefConnect",
-  description: "Hyperlocal disaster coordination for victims, volunteers, and coordinators.",
+  title: {
+    template: "%s | ReliefConnect",
+    default: "ReliefConnect | Hyperlocal Disaster Response",
+  },
+  description: "Real-time disaster coordination and emergency rescue mapping for victims and volunteers.",
   manifest: "/manifest.json",
+  keywords: ["disaster response", "emergency", "volunteer", "relief connect", "SOS", "crisis coordination"],
+  openGraph: {
+    title: "ReliefConnect | Hyperlocal Disaster Response",
+    description: "Real-time disaster coordination and emergency rescue mapping for victims and volunteers.",
+    siteName: "ReliefConnect",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ReliefConnect | Hyperlocal Disaster Response",
+    description: "Real-time disaster coordination and emergency rescue mapping for victims and volunteers.",
+  },
 };
 
 export const viewport: Viewport = {

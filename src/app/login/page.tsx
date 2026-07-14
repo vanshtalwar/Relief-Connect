@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { LoginForm } from "@/components/login-form";
 
-export default function LoginPage() {
+export const metadata = {
+  title: "Sign In",
+  description: "Sign in to access your ReliefConnect account.",
+};
+
+export default async function LoginPage() {
   return (
     <div className="relative flex min-h-screen flex-col">
       <header className="absolute top-4 left-4 z-10 sm:top-8 sm:left-8">

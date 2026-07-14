@@ -14,6 +14,11 @@ const PlusIcon = () => (
   </svg>
 );
 
+export const metadata = {
+  title: "Live Dashboard",
+  description: "View real-time relief requests and dispatch volunteers.",
+};
+
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   const userName = session?.user?.name || "Unknown";
@@ -92,7 +97,7 @@ export default async function DashboardPage() {
                 <span className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--foreground)]/70 font-medium">Operations Live</span>
               </div>
               <h2 className="text-xl sm:text-3xl md:text-4xl font-bold tracking-tight text-[color:var(--foreground)]">
-                Hi {userName} <span className="text-[color:var(--foreground)]/50 font-medium text-sm sm:text-xl md:text-2xl">({userRole})</span>
+                Hi <Link href="/profile" className="hover:text-sky-400 transition-colors cursor-pointer decoration-sky-400/30 underline-offset-4 hover:underline">{userName}</Link> <span className="text-[color:var(--foreground)]/50 font-medium text-sm sm:text-xl md:text-2xl">({userRole})</span>
               </h2>
             </div>
 
