@@ -69,7 +69,7 @@ export async function GET(request: Request) {
         skillMatchScore = matchingSkills.length / targetSkills.length;
       }
 
-      let distanceScore = Math.max(0, 100 - (distance * 2));
+      const distanceScore = Math.max(0, 100 - (distance * 2));
       const trustMultiplier = (v.isVerified ? 1.2 : 1.0) * (v.backgroundCheck ? 1.3 : 1.0);
       const finalScore = ((distanceScore * 0.6) + (skillMatchScore * 100 * 0.4)) * trustMultiplier;
 

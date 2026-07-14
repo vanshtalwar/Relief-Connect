@@ -109,6 +109,89 @@ app.prepare().then(() => {
       }
     });
 
+    // Handle editing messages
+    socket.on("edit_message", async (data, callback) => {
+      try {
+        if (!data.messageId || !data.content || !data.senderId) {
+          throw new Error("Missing required fields");
+        }
+
+        const message = await prisma.chatMessage.findUnique({
+          where: { id: data.messageId }
+        });
+
+        if (!message || message.senderId !== data.senderId) {
+          throw new Error("Unauthorized to edit this message");
+        }
+
+        const updatedMessage = await prisma.chatMessage.update({
+          where: { id: data.messageId },
+          data: {
+            content: data.content,
+            isEdited: true
+          },
+          include: {
+            sender: {
+              select: { id: true, name: true, role: true, image: true }
+            }
+          }
+        });
+
+        io.to(message.requestId).emit("message_edited", updatedMessage);
+        
+        if (typeof callback === "function") {
+          callback({ success: true });
+        }
+      } catch (error) {
+        console.error("Error editing message:", error);
+        if (typeof callback === "function") {
+          callback({ success: false, error: error.message });
+        }
+      }
+    });
+
+    // Handle deleting messages
+    socket.on("delete_message", async (data, callback) => {
+      try {
+        if (!data.messageId || !data.senderId) {
+          throw new Error("Missing required fields");
+        }
+
+        const message = await prisma.chatMessage.findUnique({
+          where: { id: data.messageId }
+        });
+
+        if (!message || message.senderId !== data.senderId) {
+          throw new Error("Unauthorized to delete this message");
+        }
+
+        const deletedMessage = await prisma.chatMessage.update({
+          where: { id: data.messageId },
+          data: {
+            content: null,
+            imageUrl: null,
+            isDeleted: true
+          },
+          include: {
+            sender: {
+              select: { id: true, name: true, role: true, image: true }
+            }
+          }
+        });
+
+        io.to(message.requestId).emit("message_deleted", deletedMessage);
+        
+        if (typeof callback === "function") {
+          callback({ success: true });
+        }
+      } catch (error) {
+        console.error("Error deleting message:", error);
+        if (typeof callback === "function") {
+          callback({ success: false, error: error.message });
+        }
+      }
+    });
+
     socket.on("disconnect", () => {
       console.log("Socket disconnected:", socket.id);
     });

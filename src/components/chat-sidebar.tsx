@@ -45,7 +45,7 @@ export function ChatSidebar() {
   }, [session?.user?.id]);
 
   return (
-    <div className={`w-full md:w-80 shrink-0 flex-col border-r border-[color:var(--border)] bg-[color:var(--surface)]/30 overflow-y-auto ${selectedChatId ? 'hidden md:flex' : 'flex'}`}>
+    <div className={`w-full md:w-80 shrink-0 flex-col border border-[color:var(--border)] md:border-y-0 md:border-l-0 md:border-r rounded-2xl md:rounded-none bg-[color:var(--surface)]/30 overflow-y-auto ${selectedChatId ? 'hidden md:flex' : 'flex'}`}>
       <div className="p-5 border-b border-[color:var(--border)] sticky top-0 bg-[color:var(--surface)]/80 backdrop-blur-md z-10">
         <h2 className="text-lg font-bold text-[color:var(--foreground)] tracking-tight">Messages</h2>
       </div>

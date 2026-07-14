@@ -114,7 +114,10 @@ model ChatMessage {
   senderId  String
   content   String?
   imageUrl  String?
+  isEdited  Boolean  @default(false)
+  isDeleted Boolean  @default(false)
   createdAt DateTime @default(now())
+  updatedAt DateTime? @updatedAt
 
   request   HelpRequest @relation(fields: [requestId], references: [id])
   sender    User        @relation(fields: [senderId], references: [id])

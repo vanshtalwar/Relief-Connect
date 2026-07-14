@@ -20,8 +20,8 @@ export function BroadcastAlertForm() {
     try {
       // Use standard default coordinates if location isn't vital for this demo, 
       // or try to grab the coordinator's location. We'll default to a central location.
-      let latitude = 18.963;
-      let longitude = 72.8258;
+      const latitude = 18.963;
+      const longitude = 72.8258;
 
       const res = await fetch("/api/alerts", {
         method: "POST",
