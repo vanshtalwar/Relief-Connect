@@ -8,8 +8,7 @@ import type { DemoRequest } from "@/lib/mock-data";
 import { RequestCard } from "./request-card";
 import { useSession } from "next-auth/react";
 import "leaflet/dist/leaflet.css";
-import { haversineDistanceKm, formatDistance } from "@/lib/geo";
-import { useLowBandwidth } from "./low-bandwidth-provider";
+import { formatDistance, haversineDistanceKm } from "@/lib/geo";
 import { useMap } from "react-leaflet";
 
 type LeafletComponentProps = Record<string, unknown>;
@@ -133,7 +132,6 @@ export function RequestMap({ requests }: { requests: any[] }) {
   const [category, setCategory] = useState<Category | "ALL">("ALL");
   const [urgency, setUrgency] = useState<Urgency | "ALL">("ALL");
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
-  const { isLowBandwidth } = useLowBandwidth();
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -215,23 +213,16 @@ export function RequestMap({ requests }: { requests: any[] }) {
             </div>
           </div>
         </div>
-        <div className="grid gap-0 xl:grid-cols-[0.8fr_1.2fr]">
-          <div className="h-[400px] overflow-y-auto safe-scrollbar border-b border-[color:var(--border)] xl:border-b-0 xl:border-r bg-[color:var(--muted)]">
+        <div className="flex flex-col xl:grid xl:grid-cols-[0.8fr_1.2fr] gap-4 xl:gap-0 p-4 xl:p-0">
+          <div className="h-[400px] overflow-y-auto safe-scrollbar rounded-3xl xl:rounded-none border border-[color:var(--border)] xl:border-t-0 xl:border-l-0 xl:border-b-0 xl:border-r bg-[color:var(--surface)] xl:bg-[color:var(--muted)]">
             <div className="grid gap-3 p-4 sm:p-5">
               {filteredRequests.map((request) => (
                 <RequestCard key={request.id} request={request} />
               ))}
             </div>
           </div>
-          <div className="h-[400px] bg-[color:var(--background)] relative z-10 rounded-t-3xl xl:rounded-none overflow-hidden shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.15)] xl:shadow-none border-t border-[color:var(--border)] xl:border-0">
-            {isLowBandwidth ? (
-              <div className="h-full flex flex-col items-center justify-center p-8 text-center text-[color:var(--foreground)]/50">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                <p className="font-semibold text-lg text-[color:var(--foreground)]">Low Bandwidth Mode Active</p>
-                <p className="mt-2 text-[13px] max-w-md">Live map tracking is disabled to conserve data. Please use the list view to coordinate effectively.</p>
-              </div>
-            ) : (
-              <>
+          <div className="h-[400px] bg-[color:var(--background)] relative z-10 rounded-3xl xl:rounded-none overflow-hidden border border-[color:var(--border)] xl:border-0">
+            <>
                 <style>{`
                   .volunteer-marker-icon {
                     filter: hue-rotate(120deg) !important;
@@ -309,7 +300,6 @@ export function RequestMap({ requests }: { requests: any[] }) {
                   ))}
                 </MapContainer>
               </>
-            )}
           </div>
         </div>
       </section>

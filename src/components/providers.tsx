@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import { ThemeProvider } from "./theme-provider";
 import { DevServiceWorkerReset } from "./dev-service-worker-reset";
 import { PushManager } from "./push-manager";
-import { LowBandwidthProvider } from "./low-bandwidth-provider";
 import { I18nProvider } from "./i18n-provider";
 
 export function Providers({ children }: { children: ReactNode }) {
@@ -13,7 +12,7 @@ export function Providers({ children }: { children: ReactNode }) {
     <SessionProvider>
       <I18nProvider>
         <ThemeProvider>
-          <LowBandwidthProvider>{children}</LowBandwidthProvider>
+          {children}
         </ThemeProvider>
       </I18nProvider>
       <DevServiceWorkerReset />

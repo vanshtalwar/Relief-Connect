@@ -6,6 +6,22 @@ import { useSession } from "next-auth/react";
 import { useTranslation } from "@/components/i18n-provider";
 import type { Language } from "@/lib/i18n/dictionaries";
 
+const VerifiedBadge = () => (
+  <div className="relative flex items-center justify-center group">
+    <svg
+      className="h-[18px] w-[18px] text-[#38bdf8] shrink-0 drop-shadow-sm transition-transform group-hover:scale-125 cursor-help"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+    >
+      <path d="M12 2l2.35 2.1 3.12-.4 1.15 2.93 2.8.94-.8 3.05 1.5 2.76-2.02 2.45.2 3.14-3.08.6-1.57 2.72L12 22l-2.35-2.1-3.12.4-1.15-2.93-2.8-.94.8-3.05-1.5-2.76 2.02-2.45-.2-3.14 3.08-.6 1.57-2.72L12 2zm-.25 14l5.25-5.25-1.41-1.41-3.84 3.83-1.84-1.83-1.41 1.41L11.75 16z" />
+    </svg>
+    <div className="pointer-events-none absolute bottom-full mb-1.5 whitespace-nowrap rounded bg-slate-800 px-2 py-1 text-xs font-medium text-white opacity-0 transition-opacity group-hover:opacity-100 z-50">
+      User is verified
+      <div className="absolute left-1/2 top-full -translate-x-1/2 border-[4px] border-transparent border-t-slate-800"></div>
+    </div>
+  </div>
+);
+
 export default function ProfilePage() {
   const { data: session, status, update } = useSession();
   const [isUploading, setIsUploading] = useState(false);
@@ -148,12 +164,19 @@ export default function ProfilePage() {
   return (
     <AppShell title="Profile" subtitle="Your role, identity, and session controls in one place.">
       <section className={`grid gap-6 ${session?.user?.role === "VOLUNTEER" ? "lg:grid-cols-3" : "lg:grid-cols-2"}`}>
-        <div className="bg-[color:var(--muted)] border border-[color:var(--border)] shadow-sm rounded-2xl p-6 flex flex-col justify-between">
+        <div className="order-2 lg:order-1 bg-[color:var(--muted)] border border-[color:var(--border)] shadow-sm rounded-2xl p-6 flex flex-col justify-between">
           <div>
             <h2 className="text-lg font-semibold text-[color:var(--foreground)]">Account details</h2>
             <dl className="mt-5 space-y-4 text-sm">
-              <Row label="Status" value={status === "loading" ? "Loading..." : status} />
-              <Row label="Name" value={session?.user?.name ?? "Demo user"} />
+              <Row 
+                label="Name" 
+                value={
+                  <div className="flex items-center justify-end gap-1.5">
+                    <span>{session?.user?.name ?? "Demo user"}</span>
+                    {status === "authenticated" && <VerifiedBadge />}
+                  </div>
+                } 
+              />
               <Row label="Email" value={session?.user?.email ?? "victim@reliefconnect.dev"} />
               <Row label="Phone" value={session?.user?.phone ?? "Not provided"} />
               <div className="flex items-center justify-between gap-4 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3">
@@ -185,17 +208,16 @@ export default function ProfilePage() {
                   )}
                 </dd>
               </div>
-              <Row label="Session user id" value={session?.user?.id ?? "demo-user"} />
             </dl>
           </div>
         </div>
 
         {session?.user?.role === "VOLUNTEER" && (
-          <div className="bg-[color:var(--muted)] border border-[color:var(--border)] shadow-sm rounded-2xl p-6 flex flex-col justify-between">
+          <div className="order-3 lg:order-2 bg-[color:var(--muted)] border border-[color:var(--border)] shadow-sm rounded-2xl p-6 flex flex-col justify-between">
             <div>
               <h2 className="text-lg font-semibold text-[color:var(--foreground)]">Resource Inventory</h2>
               <p className="mt-2 text-[13px] leading-relaxed text-[color:var(--foreground)]/70">
-                List the supplies and equipment you carry (comma separated). This helps coordinators assign you to relevant tasks.
+                List the supplies and equipment you carry.
               </p>
               <div className="mt-5">
                 <textarea
@@ -227,14 +249,14 @@ export default function ProfilePage() {
                 />
                 <label htmlFor="locationConsent" className="text-[13px] text-[color:var(--foreground)]/70">
                   <span className="block font-medium text-[color:var(--foreground)] mb-1">Allow Background Location Tracking</span>
-                  I consent to having my location tracked while I have active assigned requests. My location data is used exclusively to update the victim on my proximity, and will automatically cease tracking when all my requests are resolved.
+                  I consent to having my location tracked while I have active assigned requests.
                 </label>
               </div>
             </div>
           </div>
         )}
 
-        <div className="bg-[color:var(--muted)] border border-[color:var(--border)] shadow-sm rounded-2xl p-6 flex flex-col justify-between">
+        <div className="order-1 lg:order-3 bg-[color:var(--muted)] border border-[color:var(--border)] shadow-sm rounded-2xl p-6 flex flex-col justify-between">
           <div>
             <h2 className="text-lg font-semibold text-[color:var(--foreground)]">Profile photo</h2>
             <p className="mt-2 text-[13px] leading-relaxed text-[color:var(--foreground)]/70">
@@ -278,7 +300,7 @@ export default function ProfilePage() {
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-4 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3">
       <dt className="text-[color:var(--foreground)]/70">{label}</dt>

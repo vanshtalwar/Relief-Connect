@@ -13,19 +13,17 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 const STORAGE_KEY = "reliefconnect-theme";
 
-function getSystemTheme(): Theme {
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-}
+
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window === "undefined") {
-      return "dark";
+      return "light";
     }
 
     const storedTheme = window.localStorage.getItem(STORAGE_KEY);
 
-    return storedTheme === "light" || storedTheme === "dark" ? storedTheme : getSystemTheme();
+    return storedTheme === "light" || storedTheme === "dark" ? storedTheme : "light";
   });
 
   useEffect(() => {

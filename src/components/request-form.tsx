@@ -9,7 +9,6 @@ import { requestSchema } from "@/lib/schemas";
 import { categories, categoryLabels, urgencies, urgencyMeta } from "@/lib/constants";
 import type { z } from "zod";
 import dynamic from "next/dynamic";
-import { useLowBandwidth } from "./low-bandwidth-provider";
 import { enqueueAction } from "@/lib/offline-queue";
 import { useTranslation } from "./i18n-provider";
 
@@ -22,7 +21,6 @@ export function RequestForm() {
   const [step, setStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const { isLowBandwidth } = useLowBandwidth();
   const { t } = useTranslation();
   const { data: session } = useSession();
   const form = useForm<RequestInput>({
@@ -184,11 +182,6 @@ export function RequestForm() {
             </div>
             <div className="space-y-2">
               <span className="text-sm font-medium text-slate-800 dark:text-slate-100 block">Select exact location on map</span>
-              {isLowBandwidth ? (
-                <div className="h-20 w-full relative flex items-center justify-center rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] text-[color:var(--foreground)]/50 text-xs text-center p-4">
-                  Low Bandwidth Mode: Map disabled. We will use your device's approximate GPS coordinates.
-                </div>
-              ) : (
                 <div className="h-64 w-full relative">
                   <LocationPickerMap
                     latitude={values.latitude}
@@ -200,7 +193,6 @@ export function RequestForm() {
                     }}
                   />
                 </div>
-              )}
               {values.locationName && (
                 <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-3 text-xs leading-relaxed text-slate-700 dark:text-slate-350">
                   <strong>Exact Location Name:</strong> {values.locationName}
@@ -220,7 +212,6 @@ export function RequestForm() {
             <Field label={t.form.contactEmail}>
               <input className="input sm:col-span-2" placeholder={session?.user?.email ?? ""} {...form.register("contactEmail")} />
             </Field>
-            {!isLowBandwidth && (
               <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   {t.form.photoOptional}
@@ -262,7 +253,6 @@ export function RequestForm() {
                   </div>
                 )}
               </div>
-            )}
           </div>
         ) : null}
         {step === 3 ? (
