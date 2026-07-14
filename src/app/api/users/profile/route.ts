@@ -23,7 +23,14 @@ export async function GET(request: Request) {
       select: { id: true, name: true, email: true, image: true, role: true, inventory: true, locationConsent: true },
     });
 
-    return NextResponse.json({ user });
+    return NextResponse.json(
+      { user },
+      {
+        headers: {
+          "Cache-Control": "private, s-maxage=10, stale-while-revalidate=59",
+        },
+      }
+    );
   } catch (error) {
     console.error("Fetch profile error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { useParams } from "next/navigation";
+import useSWR from "swr";
 
 type ChatPreview = {
   id: string;
@@ -16,33 +17,20 @@ type ChatPreview = {
   updatedAt: string;
 };
 
+const fetcher = (url: string) => fetch(url).then((res) => {
+  if (!res.ok) throw new Error("Failed to load messages");
+  return res.json();
+});
+
 export function ChatSidebar() {
   const { data: session } = useSession();
   const params = useParams();
   const selectedChatId = params?.requestId as string | undefined;
 
-  const [chats, setChats] = useState<ChatPreview[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!session?.user?.id) return;
-
-    fetch("/api/messages")
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to load messages");
-        return res.json();
-      })
-      .then((data) => {
-        setChats(data);
-        setIsLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setError(err.message);
-        setIsLoading(false);
-      });
-  }, [session?.user?.id]);
+  const { data: chats, error, isLoading } = useSWR<ChatPreview[]>(
+    session?.user?.id ? "/api/messages" : null,
+    fetcher
+  );
 
   return (
     <div className={`w-full md:w-80 shrink-0 flex-col border border-[color:var(--border)] md:border-y-0 md:border-l-0 md:border-r rounded-2xl md:rounded-none bg-[color:var(--surface)]/30 overflow-y-auto ${selectedChatId ? 'hidden md:flex' : 'flex'}`}>
@@ -51,10 +39,10 @@ export function ChatSidebar() {
       </div>
 
       <div className="p-3">
-        {isLoading ? (
+        {isLoading || !chats ? (
           <div className="p-8 text-center text-sm text-[color:var(--foreground)]/50">Loading conversations...</div>
         ) : error ? (
-          <div className="p-8 text-center text-sm text-red-500">{error}</div>
+          <div className="p-8 text-center text-sm text-red-500">{error.message || "Error loading"}</div>
         ) : chats.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-8 text-center">
             <div className="text-4xl">💬</div>

@@ -6,6 +6,7 @@ import type { ComponentType } from "react";
 import "leaflet/dist/leaflet.css";
 import { haversineDistanceKm, formatDistance } from "@/lib/geo";
 import { useSession } from "next-auth/react";
+import useSWR from "swr";
 
 type LeafletComponentProps = Record<string, unknown>;
 
@@ -113,24 +114,18 @@ export function RequestDetailMap({
     return () => navigator.geolocation.clearWatch(watchId);
   }, [session, volunteer]);
 
-  // Request details polling
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/requests/${requestId}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.request && data.request.volunteer) {
-            setVolunteer(data.request.volunteer);
-          }
-        }
-      } catch (err) {
-        console.error("Error polling request details:", err);
-      }
-    }, 5000);
+  // Request details polling with SWR
+  const { data: requestData } = useSWR(
+    `/api/requests/${requestId}`,
+    (url) => fetch(url).then(res => res.json()),
+    { refreshInterval: 5000 }
+  );
 
-    return () => clearInterval(interval);
-  }, [requestId]);
+  useEffect(() => {
+    if (requestData?.request?.assignedVolunteers) {
+      setVolunteer(requestData.request.assignedVolunteers);
+    }
+  }, [requestData]);
 
   const hasVolunteerCoords = volunteer && volunteer.latitude != null && volunteer.longitude != null;
 

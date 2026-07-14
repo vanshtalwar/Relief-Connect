@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { io, Socket } from "socket.io-client";
 import { format } from "date-fns";
 import Link from "next/link";
+import useSWR from "swr";
 
 type Message = {
   id: string;
@@ -32,6 +33,11 @@ type RequestDetails = {
   requester: { id: string; name: string; image: string | null; role: string };
   assignedVolunteers: { id: string; name: string; image: string | null; role: string } | null;
 };
+
+const fetcher = (url: string) => fetch(url).then((res) => {
+  if (!res.ok) throw new Error("Failed to load data");
+  return res.json();
+});
 
 export default function ChatRoomPage({ params }: { params: Promise<{ requestId: string }> }) {
   const unwrappedParams = use(params);
@@ -82,31 +88,40 @@ export default function ChatRoomPage({ params }: { params: Promise<{ requestId: 
     };
   }, []);
 
-  // Load initial history
-  useEffect(() => {
-    if (!session?.user?.id) return;
+  const { data: initialData, error: swrError, isLoading: isSwrLoading } = useSWR(
+    session?.user?.id ? `/api/messages/${requestId}` : null,
+    fetcher
+  );
 
-    fetch(`/api/messages/${requestId}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to load history");
-        return res.json();
-      })
-      .then((data) => {
-        // Data contains { request, messages }
-        if (data.request && data.messages) {
-          setRequestDetails(data.request);
-          setMessages(data.messages);
-        } else if (Array.isArray(data)) {
-          // Fallback if API hasn't fully updated or returns array
-          setMessages(data);
-        }
-        setIsLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setIsLoading(false);
-      });
-  }, [session?.user?.id, requestId]);
+  useEffect(() => {
+    if (initialData) {
+      if (initialData.request && initialData.messages) {
+        setRequestDetails(initialData.request);
+        // Only update messages if it's the first load or if the fetched data length is significantly different
+        // to prevent overwriting socket messages mid-typing.
+        setMessages((prev) => {
+          if (prev.length === 0 || initialData.messages.length > prev.length) {
+            return initialData.messages;
+          }
+          return prev;
+        });
+      } else if (Array.isArray(initialData)) {
+        setMessages(initialData);
+      }
+      setIsLoading(false);
+    }
+  }, [initialData]);
+
+  useEffect(() => {
+    if (swrError) {
+      setError(swrError.message);
+      setIsLoading(false);
+    }
+  }, [swrError]);
+
+  useEffect(() => {
+    if (isSwrLoading) setIsLoading(true);
+  }, [isSwrLoading]);
 
   // Setup Socket
   useEffect(() => {

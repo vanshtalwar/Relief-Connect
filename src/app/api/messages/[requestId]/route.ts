@@ -24,18 +24,21 @@ export async function GET(
 
     const userId = session.user.id;
 
-    // Verify user has access to this request
-    const helpRequest = await prisma.helpRequest.findUnique({
+    // Fetch request details and verify user has access
+    const requestDetails = await prisma.helpRequest.findUnique({
       where: { id: requestId },
-      include: { assignedVolunteers: true }
+      include: {
+        requester: { select: { id: true, name: true, image: true, role: true } },
+        assignedVolunteers: { select: { id: true, name: true, image: true, role: true } }
+      }
     });
 
-    if (!helpRequest) {
+    if (!requestDetails) {
       return NextResponse.json({ error: "Request not found" }, { status: 404 });
     }
 
-    const isRequester = helpRequest.requesterId === userId;
-    const isVolunteer = helpRequest.assignedVolunteers?.id === userId;
+    const isRequester = requestDetails.requesterId === userId;
+    const isVolunteer = requestDetails.assignedVolunteers?.id === userId;
     
     if (!isRequester && !isVolunteer) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -49,14 +52,6 @@ export async function GET(
         sender: {
           select: { id: true, name: true, image: true, role: true }
         }
-      }
-    });
-
-    const requestDetails = await prisma.helpRequest.findUnique({
-      where: { id: requestId },
-      include: {
-        requester: { select: { id: true, name: true, image: true, role: true } },
-        assignedVolunteers: { select: { id: true, name: true, image: true, role: true } }
       }
     });
 

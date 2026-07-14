@@ -60,6 +60,8 @@ model HelpRequest {
   @@index([category])
   @@index([createdAt])
   @@index([updatedAt])
+  @@index([requesterId])
+  @@index([volunteerId])
   // @@index([location], map: "idx_helprequest_location", type: Gist)
 }
 
@@ -121,6 +123,8 @@ model ChatMessage {
 
   request   HelpRequest @relation(fields: [requestId], references: [id])
   sender    User        @relation(fields: [senderId], references: [id])
+
+  @@index([requestId])
 }
 
 model Review {

@@ -22,6 +22,10 @@ const VerifiedBadge = () => (
   </div>
 );
 
+import useSWR from "swr";
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
 export default function ProfilePage() {
   const { data: session, status, update } = useSession();
   const [isUploading, setIsUploading] = useState(false);
@@ -35,19 +39,18 @@ export default function ProfilePage() {
 
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
 
+  const { data: profileData } = useSWR(session?.user?.id ? "/api/users/profile" : null, fetcher);
+
   useEffect(() => {
-    fetch("/api/users/profile")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.user?.inventory) {
-          setInventory(data.user.inventory.join(", "));
-        }
-        if (typeof data.user?.locationConsent === "boolean") {
-          setLocationConsent(data.user.locationConsent);
-        }
-      })
-      .catch((err) => console.error("Failed to load profile:", err));
-  }, []);
+    if (profileData?.user) {
+      if (profileData.user.inventory) {
+        setInventory(profileData.user.inventory.join(", "));
+      }
+      if (typeof profileData.user.locationConsent === "boolean") {
+        setLocationConsent(profileData.user.locationConsent);
+      }
+    }
+  }, [profileData]);
 
   const handleInventoryUpdate = async () => {
     setIsUpdatingInventory(true);
