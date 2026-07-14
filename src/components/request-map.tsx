@@ -191,16 +191,18 @@ export function RequestMap({ requests }: { requests: any[] }) {
   return (
     <div className="w-full h-full">
       <section className="bg-[color:var(--muted)] overflow-hidden flex flex-col h-full w-full">
-        <div className="border-b border-[color:var(--border)] bg-[color:var(--surface)] px-5 py-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <FilterPill label={`All (${filteredRequests.length})`} active={category === "ALL" && urgency === "ALL"} onClick={() => {
-              setCategory("ALL");
-              setUrgency("ALL");
-            }} />
-            {Object.keys(categoryLabels).map((value) => (
-              <FilterPill key={value} label={categoryLabels[value as Category]} active={category === value} onClick={() => setCategory(value as Category)} />
-            ))}
-            <div className="ml-auto flex items-center gap-3">
+        <div className="border-b border-[color:var(--border)] bg-[color:var(--surface)] px-4 sm:px-5 py-3 sm:py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2">
+            <div className="flex overflow-x-auto pb-2 -mb-2 sm:pb-0 sm:mb-0 gap-2 flex-nowrap sm:flex-wrap items-center [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <FilterPill label={`All (${filteredRequests.length})`} active={category === "ALL" && urgency === "ALL"} onClick={() => {
+                setCategory("ALL");
+                setUrgency("ALL");
+              }} />
+              {Object.keys(categoryLabels).map((value) => (
+                <FilterPill key={value} label={categoryLabels[value as Category]} active={category === value} onClick={() => setCategory(value as Category)} />
+              ))}
+            </div>
+            <div className="flex items-center gap-3 sm:ml-auto shrink-0 border-t border-[color:var(--border)] pt-3 mt-1 sm:border-0 sm:pt-0 sm:mt-0">
               <span className="text-[10px] font-bold uppercase tracking-wider text-[color:var(--foreground)]/50">Urgency</span>
               <select className="focus-ring cursor-pointer rounded-md border border-[color:var(--border)] bg-[color:var(--muted)] px-3 py-1.5 text-[12px] font-semibold text-[color:var(--foreground)] transition-colors hover:border-[color:var(--border-strong)] outline-none" value={urgency} onChange={(event) => setUrgency(event.target.value as Urgency | "ALL")}>
                 <option value="ALL">All Levels</option>
@@ -221,7 +223,7 @@ export function RequestMap({ requests }: { requests: any[] }) {
               ))}
             </div>
           </div>
-          <div className="h-[400px] bg-[color:var(--background)] relative z-0">
+          <div className="h-[400px] bg-[color:var(--background)] relative z-10 rounded-t-3xl xl:rounded-none overflow-hidden shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.15)] xl:shadow-none border-t border-[color:var(--border)] xl:border-0">
             {isLowBandwidth ? (
               <div className="h-full flex flex-col items-center justify-center p-8 text-center text-[color:var(--foreground)]/50">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
@@ -320,7 +322,7 @@ function FilterPill({ label, active, onClick }: { label: string; active: boolean
     <button
       type="button"
       onClick={onClick}
-      className={`focus-ring rounded-full border px-3 py-2 text-sm backdrop-blur-md transition duration-300 ${active ? "border-sky-400 bg-sky-400/20 text-sky-700 dark:text-sky-100 shadow-sm" : "border-[color:var(--border)] bg-[color:var(--surface)]/50 text-[color:var(--foreground)]/78 hover:-translate-y-0.5 hover:border-sky-400/40 hover:bg-[color:var(--surface-strong)]/60"}`}
+      className={`focus-ring shrink-0 rounded-full border px-3 py-2 text-sm backdrop-blur-md transition duration-300 ${active ? "border-sky-400 bg-sky-400/20 text-sky-700 dark:text-sky-100 shadow-sm" : "border-[color:var(--border)] bg-[color:var(--surface)]/50 text-[color:var(--foreground)]/78 hover:-translate-y-0.5 hover:border-sky-400/40 hover:bg-[color:var(--surface-strong)]/60"}`}
     >
       {label}
     </button>

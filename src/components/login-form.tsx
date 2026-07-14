@@ -11,7 +11,7 @@ export function LoginForm() {
 
   return (
     <form
-      className="glass-panel mx-auto w-full max-w-md rounded-3xl p-6"
+      className="glass-panel mx-auto w-full max-w-md rounded-3xl p-5 sm:p-8"
       onSubmit={async (event) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);

@@ -29,31 +29,31 @@ export default async function Home() {
   ];
 
   return (
-    <main className="relative min-h-screen overflow-hidden px-4 py-6 sm:px-6 lg:px-8">
+    <main className="relative min-h-screen overflow-hidden px-4 py-4 sm:px-6 lg:px-8">
       <div className="absolute left-[-12rem] top-24 -z-10 h-72 w-72 rounded-full bg-sky-500/15 blur-3xl" />
       <div className="absolute right-[-8rem] top-1/3 -z-10 h-96 w-96 rounded-full bg-cyan-400/10 blur-3xl" />
 
 
 
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 mt-14">
-        <section className="glass-panel rounded-3xl p-6 sm:p-8 lg:p-10">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 mt-8 sm:mt-14">
+        <section className="glass-panel rounded-3xl p-5 sm:p-8 lg:p-10">
           {/* Header Row: Aligned to the top right of the card component */}
-          <div className="flex items-center justify-between border-b border-[color:var(--border)] pb-4 mb-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-[color:var(--border)] pb-4 mb-6">
             <div className="inline-flex items-center gap-2 rounded-full border border-sky-400/25 bg-sky-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-sky-600 dark:text-sky-200">
               ReliefConnect live ops
             </div>
-            <div className="flex gap-2.5">
+            <div className="flex w-full sm:w-auto gap-2.5">
               {isLoggedIn ? (
                 <>
                   <Link
                     href="/dashboard"
-                    className="focus-ring inline-flex items-center justify-center rounded-full bg-sky-400 px-4 py-1.5 text-xs sm:text-sm font-semibold text-slate-950 transition hover:bg-sky-300"
+                    className="focus-ring flex-1 sm:flex-none inline-flex items-center justify-center rounded-full bg-sky-400 px-4 py-2 sm:py-1.5 text-sm font-semibold text-slate-950 transition hover:bg-sky-300"
                   >
                     Dashboard
                   </Link>
                   <Link
                     href="/profile"
-                    className="focus-ring inline-flex items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-1.5 text-xs sm:text-sm font-semibold text-[color:var(--foreground)]/90 transition hover:border-sky-400/40 hover:bg-[color:var(--surface-strong)]"
+                    className="focus-ring flex-1 sm:flex-none inline-flex items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-2 sm:py-1.5 text-sm font-semibold text-[color:var(--foreground)]/90 transition hover:border-sky-400/40 hover:bg-[color:var(--surface-strong)]"
                   >
                     View profile
                   </Link>
@@ -62,13 +62,13 @@ export default async function Home() {
                 <>
                   <Link
                     href="/login"
-                    className="focus-ring inline-flex items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-1.5 text-xs sm:text-sm font-semibold text-[color:var(--foreground)]/90 transition hover:border-sky-400/40 hover:bg-[color:var(--surface-strong)]"
+                    className="focus-ring flex-1 sm:flex-none inline-flex items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-2 sm:py-1.5 text-sm font-semibold text-[color:var(--foreground)]/90 transition hover:border-sky-400/40 hover:bg-[color:var(--surface-strong)]"
                   >
                     Sign in
                   </Link>
                   <Link
                     href="/signup"
-                    className="focus-ring inline-flex items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-1.5 text-xs sm:text-sm font-semibold text-[color:var(--foreground)]/90 transition hover:border-sky-400/40 hover:bg-[color:var(--surface-strong)]"
+                    className="focus-ring flex-1 sm:flex-none inline-flex items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-2 sm:py-1.5 text-sm font-semibold text-[color:var(--foreground)]/90 transition hover:border-sky-400/40 hover:bg-[color:var(--surface-strong)]"
                   >
                     Create account
                   </Link>
@@ -79,7 +79,7 @@ export default async function Home() {
 
           <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl space-y-5">
-              <h1 className="text-4xl font-semibold tracking-tight text-[color:var(--foreground)] sm:text-5xl lg:text-6xl">
+              <h1 className="text-3xl font-semibold tracking-tight text-[color:var(--foreground)] sm:text-5xl lg:text-6xl">
                 Coordinate disaster response with a map-first, always-updated control room.
               </h1>
               <p className="max-w-2xl text-base leading-7 text-slate-700 dark:text-slate-300 sm:text-lg">
@@ -119,8 +119,8 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="grid gap-6 md:grid-cols-3">
-          <div className="glass-panel rounded-3xl p-6 sm:p-8 space-y-3 transition duration-300 hover:-translate-y-1 hover:border-sky-400/40">
+        <section className="grid gap-4 sm:gap-6 md:grid-cols-3">
+          <div className="glass-panel rounded-3xl p-5 sm:p-8 space-y-3 transition duration-300 hover:-translate-y-1 hover:border-sky-400/40">
             <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-400/10 text-sky-600 dark:text-sky-400 text-lg">
               📍
             </div>
@@ -129,7 +129,7 @@ export default async function Home() {
               Geo-targeted request pins help volunteers instantly locate people in need. Filter by category, priority, and proximity to coordinate local support.
             </p>
           </div>
-          <div className="glass-panel rounded-3xl p-6 sm:p-8 space-y-3 transition duration-300 hover:-translate-y-1 hover:border-emerald-400/40">
+          <div className="glass-panel rounded-3xl p-5 sm:p-8 space-y-3 transition duration-300 hover:-translate-y-1 hover:border-emerald-400/40">
             <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-400/10 text-emerald-600 dark:text-emerald-400 text-lg">
               ⚡
             </div>
@@ -138,7 +138,7 @@ export default async function Home() {
               Real-time push notifications keep everyone updated. See exactly when a request is claimed, in progress, or successfully resolved.
             </p>
           </div>
-          <div className="glass-panel rounded-3xl p-6 sm:p-8 space-y-3 transition duration-300 hover:-translate-y-1 hover:border-amber-400/40">
+          <div className="glass-panel rounded-3xl p-5 sm:p-8 space-y-3 transition duration-300 hover:-translate-y-1 hover:border-amber-400/40">
             <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-400/10 text-amber-600 dark:text-amber-400 text-lg">
               📶
             </div>

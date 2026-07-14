@@ -12,7 +12,7 @@ export function SignupForm() {
 
   return (
     <form
-      className="glass-panel mx-auto w-full max-w-lg rounded-3xl p-6"
+      className="glass-panel mx-auto w-full max-w-lg rounded-3xl p-5 sm:p-8"
       onSubmit={async (event) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
@@ -59,7 +59,7 @@ export function SignupForm() {
         router.push(result?.url ?? "/dashboard");
       }}
     >
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:gap-5 sm:grid-cols-2">
         <Field label="Full name"><input name="name" className="input" required minLength={2} /></Field>
         <Field label="Email"><input name="email" type="email" className="input" required /></Field>
         <Field label="Password">
