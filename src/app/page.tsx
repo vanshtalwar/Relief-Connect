@@ -89,7 +89,7 @@ export default async function Home() {
             </div>
 
             {isLoggedIn ? (
-              <div className="grid gap-3 sm:grid-cols-2 lg:w-[28rem]">
+              <div className="hidden sm:grid gap-3 sm:grid-cols-2 lg:w-[28rem]">
                 {stats.map((stat) => (
                   <div key={stat.label} className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-4">
                     <div className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{stat.label}</div>

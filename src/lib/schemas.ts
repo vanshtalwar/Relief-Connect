@@ -3,7 +3,7 @@ import { categories, requestStatuses, roles, urgencies } from "./constants";
 
 export const signupSchema = z.object({
   name: z.string().min(2),
-  email: z.string().email(),
+  email: z.string().email().toLowerCase(),
   password: z.string().min(8),
   role: z.enum([roles[0], roles[1]]),
   phone: z.string().min(7).optional().or(z.literal("")),
@@ -11,7 +11,7 @@ export const signupSchema = z.object({
 });
 
 export const loginSchema = z.object({
-  email: z.string().email(),
+  email: z.string().email().toLowerCase(),
   password: z.string().min(1),
 });
 

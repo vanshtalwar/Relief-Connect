@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { AppShell } from "@/components/app-shell";
 import { AnalyticsDashboard } from "@/components/analytics-dashboard";
-import { NotificationDrawer } from "@/components/notification-drawer";
 import { BroadcastAlertForm } from "@/components/broadcast-alert-form";
 import { VerificationQueue } from "@/components/verification-queue";
 import { buildCoordinatorSummary } from "@/lib/analytics";
@@ -24,9 +23,14 @@ export default async function CoordinatorPage() {
   return (
     <AppShell title="Coordinator command center" subtitle="Verification queue, analytics, alerts, and live operational context sit behind one role-protected entry point.">
       <div className="flex flex-col gap-5">
+        <div>
+          <h1 className="text-2xl font-bold text-[color:var(--foreground)] tracking-tight">Coordinator Dashboard</h1>
+          <p className="text-sm text-[color:var(--foreground)]/60 mt-1">Manage operations and monitor ongoing response efforts.</p>
+        </div>
+        
         <AnalyticsDashboard summary={summary} />
         
-        <div className="grid gap-5 lg:grid-cols-3 items-start">
+        <div className="grid gap-5 lg:grid-cols-2 items-start">
           {/* Column 1: Broadcast Alert */}
           <section className="bg-[color:var(--muted)] border border-[color:var(--border)] rounded-xl overflow-hidden shadow-sm h-full flex flex-col">
             <div className="border-b border-[color:var(--border)] px-4 py-3 bg-[color:var(--surface)]">
@@ -37,11 +41,6 @@ export default async function CoordinatorPage() {
               <BroadcastAlertForm />
             </div>
           </section>
-          
-          {/* Column 2: Notifications / Activity Log */}
-          <div className="h-full">
-            <NotificationDrawer />
-          </div>
 
           {/* Column 3: Verification Queue */}
           <section className="bg-[color:var(--muted)] border border-[color:var(--border)] rounded-xl overflow-hidden shadow-sm h-full flex flex-col">

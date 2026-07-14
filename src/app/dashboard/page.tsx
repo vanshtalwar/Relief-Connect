@@ -79,33 +79,37 @@ export default async function DashboardPage() {
   return (
     <AppShell title="Live map dashboard" subtitle="Track nearby requests, claim work, and see the full response picture without leaving the map-first workspace.">
       <div className="space-y-8 animate-in fade-in duration-500">
-        
+
         {/* Welcome Hero Banner */}
-        <section className="relative overflow-hidden bg-[color:var(--muted)] border border-[color:var(--border)] rounded-2xl p-6 sm:p-8 shadow-sm">
+        <section className="relative overflow-hidden bg-[color:var(--muted)] border border-[color:var(--border)] rounded-2xl py-3 px-4 sm:p-8 shadow-sm">
           <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#38bdf8] opacity-[0.03] rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3 pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[#3FA37E] opacity-[0.03] rounded-full blur-[80px] translate-y-1/3 -translate-x-1/4 pointer-events-none" />
-          
+
           <div className="relative z-10 flex flex-col md:flex-row md:items-start md:justify-between gap-6">
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-[color:var(--surface)] border border-[color:var(--border)] mb-4">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 <span className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--foreground)]/70 font-medium">Operations Live</span>
               </div>
-              <h2 className="text-3xl font-bold tracking-tight text-[color:var(--foreground)] sm:text-4xl">
-                Hi {userName} <span className="text-[color:var(--foreground)]/50 font-medium text-2xl">({userRole})</span>
+              <h2 className="text-xl sm:text-3xl md:text-4xl font-bold tracking-tight text-[color:var(--foreground)]">
+                Hi {userName} <span className="text-[color:var(--foreground)]/50 font-medium text-sm sm:text-xl md:text-2xl">({userRole})</span>
               </h2>
             </div>
-            
+
             {/* Actions aligned to the right corner of the banner */}
             <div className="flex items-center gap-3">
-              <SOSButton />
-              <Link
-                href="/requests/new"
-                className="focus-ring flex items-center gap-2 rounded-full bg-[color:var(--foreground)] px-5 py-2 text-[12px] font-bold uppercase tracking-wider text-[color:var(--background)] transition hover:-translate-y-0.5 hover:bg-opacity-80 shadow-md"
-              >
-                <PlusIcon />
-                <span>New Request</span>
-              </Link>
+              {userRole === "VICTIM" && (
+                <>
+                  <SOSButton />
+                  <Link
+                    href="/requests/new"
+                    className="focus-ring flex items-center gap-2 rounded-full bg-[color:var(--foreground)] px-5 py-2 text-[12px] font-bold uppercase tracking-wider text-[color:var(--background)] transition hover:-translate-y-0.5 hover:bg-opacity-80 shadow-md"
+                  >
+                    <PlusIcon />
+                    <span>New Request</span>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </section>
@@ -130,4 +134,4 @@ export default async function DashboardPage() {
     </AppShell>
   );
 }
-
+

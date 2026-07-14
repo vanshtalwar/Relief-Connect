@@ -190,27 +190,30 @@ export function RequestCard({
   }
 
   return (
-    <div className={`focus-ring glass-panel block rounded-3xl p-5 transition duration-300 hover:shadow-2xl ${request.isSOS ? 'border-2 border-red-500 shadow-red-500/20' : ''}`}>
+    <div 
+      onClick={() => router.push(`/requests/${request.id}`)}
+      className={`cursor-pointer focus-ring glass-panel block rounded-2xl sm:rounded-3xl p-3 sm:p-5 transition duration-300 hover:shadow-2xl hover:-translate-y-0.5 ${request.isSOS ? 'border-2 border-red-500 shadow-red-500/20' : ''}`}
+    >
       {request.isSOS && (
-        <div className="mb-3 flex items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-bold text-white shadow-md animate-pulse">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>
+        <div className="mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2 rounded-lg bg-red-600 px-2 py-1 sm:px-3 sm:py-1.5 text-[9px] sm:text-xs font-bold text-white shadow-md animate-pulse">
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 sm:w-[14px] sm:h-[14px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>
           SOS EMERGENCY
         </div>
       )}
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-[color:var(--foreground)]/55">{categoryLabels[request.category]}</p>
-          <Link href={`/requests/${request.id}`} className="mt-1 block text-lg font-semibold text-[color:var(--foreground)] hover:text-sky-400 transition-colors">
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] sm:text-xs uppercase tracking-[0.2em] text-[color:var(--foreground)]/55">{categoryLabels[request.category]}</p>
+          <div className="mt-1 block text-sm sm:text-lg font-semibold text-[color:var(--foreground)] group-hover:text-sky-400 transition-colors truncate">
             {request.title}
-          </Link>
+          </div>
         </div>
-        <div className="rounded-full px-3 py-1 text-xs font-semibold text-white shadow-sm shrink-0" style={{ backgroundColor: activeUrgency.color }}>
+        <div className="rounded-full px-2 py-0.5 sm:px-3 sm:py-1 text-[10px] sm:text-xs font-semibold text-white shadow-sm shrink-0" style={{ backgroundColor: activeUrgency.color }}>
           {activeUrgency.label}
         </div>
       </div>
-      <p className="mt-3 line-clamp-2 text-sm leading-6 text-[color:var(--foreground)]/72">{request.description}</p>
-      <div className="mt-4 flex items-center justify-between text-sm text-[color:var(--foreground)]/70">
-        <span className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-3 py-1 text-xs font-medium">{requestStatusLabels[request.status]}</span>
+      <p className="hidden sm:block mt-2 sm:mt-3 line-clamp-1 sm:line-clamp-2 text-xs sm:text-sm leading-5 sm:leading-6 text-[color:var(--foreground)]/72">{request.description}</p>
+      <div className="mt-3 sm:mt-4 flex items-center justify-between text-xs sm:text-sm text-[color:var(--foreground)]/70">
+        <span className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-2 py-0.5 sm:px-3 sm:py-1 text-[10px] sm:text-xs font-medium">{requestStatusLabels[request.status]}</span>
         <span className="font-medium">{formatDistance(request.distanceKm)}</span>
       </div>
 
@@ -219,14 +222,14 @@ export function RequestCard({
           <button
             type="button"
             className="focus-ring rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-3 py-1.5 font-medium text-[color:var(--foreground)]/80 hover:border-sky-400/40 hover:bg-[color:var(--surface-strong)]"
-            onClick={() => setIsEditing(true)}
+            onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
           >
             Edit
           </button>
           <button
             type="button"
             className="focus-ring rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1.5 font-medium text-red-400 hover:border-red-500/40 hover:bg-red-500/20"
-            onClick={() => setIsDeleting(true)}
+            onClick={(e) => { e.stopPropagation(); setIsDeleting(true); }}
           >
             Delete
           </button>
