@@ -30,7 +30,7 @@ export default function ProfilePage() {
   const { data: session, status, update } = useSession();
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [inventory, setInventory] = useState<string>("");
   const [isUpdatingInventory, setIsUpdatingInventory] = useState(false);
 
@@ -171,14 +171,14 @@ export default function ProfilePage() {
           <div>
             <h2 className="text-lg font-semibold text-[color:var(--foreground)]">Account details</h2>
             <dl className="mt-5 space-y-4 text-sm">
-              <Row 
-                label="Name" 
+              <Row
+                label="Name"
                 value={
                   <div className="flex items-center justify-end gap-1.5">
                     <span>{session?.user?.name ?? "Demo user"}</span>
                     {status === "authenticated" && <VerifiedBadge />}
                   </div>
-                } 
+                }
               />
               <Row label="Email" value={session?.user?.email ?? "victim@reliefconnect.dev"} />
               <Row label="Phone" value={session?.user?.phone ?? "Not provided"} />
@@ -265,7 +265,7 @@ export default function ProfilePage() {
             <p className="mt-2 text-[13px] leading-relaxed text-[color:var(--foreground)]/70">
               Upload a profile image to represent your identity.
             </p>
-            
+
             <div className="mt-8 flex flex-col items-center gap-6">
               <div className="relative h-32 w-32 overflow-hidden rounded-full border-[3px] border-[#38bdf8]/30 bg-[color:var(--surface)] shadow-lg flex items-center justify-center">
                 {session?.user?.image ? (
