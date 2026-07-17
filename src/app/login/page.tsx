@@ -12,10 +12,10 @@ export default async function LoginPage() {
       <header className="absolute top-4 left-4 z-10 sm:top-8 sm:left-8">
         <Link
           href="/"
-          className="focus-ring inline-flex items-center gap-2 rounded-full border border-sky-400/25 bg-sky-400/10 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-sky-600 transition hover:-translate-y-0.5 hover:bg-sky-400/15 dark:text-sky-200"
+          className="focus-ring inline-flex items-center gap-2 px-1 transition hover:-translate-y-0.5"
           aria-label="Go to homepage"
         >
-          ReliefConnect
+          <span className="text-xl font-bold tracking-tight text-[color:var(--foreground)]">Relief<span className="text-sky-500">Connect</span></span>
         </Link>
       </header>
 
