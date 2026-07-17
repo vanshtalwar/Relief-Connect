@@ -6,8 +6,9 @@ export const signupSchema = z.object({
   email: z.string().email().toLowerCase(),
   password: z.string().min(8),
   role: z.enum([roles[0], roles[1]]),
-  phone: z.string().min(7).optional().or(z.literal("")),
+  phone: z.string().min(7),
   skills: z.array(z.string()).optional(),
+  otp: z.string().length(6).optional(),
 });
 
 export const loginSchema = z.object({

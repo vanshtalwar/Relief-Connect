@@ -33,6 +33,27 @@ export async function POST(request: Request) {
     }
   }
 
+  if (!parsed.data.otp) {
+    return NextResponse.json({ error: "Verification code is required" }, { status: 400 });
+  }
+
+  const otpRecords = await prisma.$queryRaw<any[]>`
+    SELECT * FROM "OtpVerification" WHERE email = ${parsed.data.email}
+  `;
+  const otpRecord = otpRecords[0];
+
+  if (!otpRecord || otpRecord.otp !== parsed.data.otp) {
+    return NextResponse.json({ error: "Invalid verification code" }, { status: 400 });
+  }
+
+  if (new Date() > new Date(otpRecord.expiresAt)) {
+    return NextResponse.json({ error: "Verification code has expired" }, { status: 400 });
+  }
+
+  await prisma.$executeRaw`
+    DELETE FROM "OtpVerification" WHERE email = ${parsed.data.email}
+  `;
+
   const passwordHash = await bcrypt.hash(parsed.data.password, 10);
   const user = await prisma.user.create({
     data: {
@@ -41,6 +62,7 @@ export async function POST(request: Request) {
       role: parsed.data.role,
       phone: parsed.data.phone || null,
       passwordHash,
+      isVerified: true,
     },
   });
 

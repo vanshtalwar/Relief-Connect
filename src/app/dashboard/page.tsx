@@ -115,6 +115,11 @@ export default async function DashboardPage() {
                   </Link>
                 </>
               )}
+              {userRole === "VOLUNTEER" && (
+                <p className="text-[11px] text-[color:var(--foreground)]/50 w-full text-left md:max-w-[180px] md:text-right font-medium leading-relaxed">
+                  To post a new request, switch your role to <Link href="/profile" className="underline decoration-[color:var(--foreground)]/20 hover:text-[#38bdf8] hover:decoration-[#38bdf8] transition-colors">Victim in Profile</Link>.
+                </p>
+              )}
             </div>
           </div>
         </section>

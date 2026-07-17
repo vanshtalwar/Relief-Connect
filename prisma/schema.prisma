@@ -140,3 +140,11 @@ model Review {
   reviewer   User        @relation("Reviewer", fields: [reviewerId], references: [id])
   reviewee   User        @relation("Reviewee", fields: [revieweeId], references: [id])
 }
+
+model OtpVerification {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  otp       String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}

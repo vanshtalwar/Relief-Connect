@@ -74,3 +74,43 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = session.user.id;
+
+    // Manually clean up relations because onDelete: Cascade is not enabled in schema.prisma
+    const requests = await prisma.helpRequest.findMany({ where: { requesterId: userId } });
+    const requestIds = requests.map(r => r.id);
+
+    if (requestIds.length > 0) {
+      await prisma.$transaction([
+        prisma.statusEvent.deleteMany({ where: { requestId: { in: requestIds } } }),
+        prisma.chatMessage.deleteMany({ where: { requestId: { in: requestIds } } }),
+        prisma.review.deleteMany({ where: { requestId: { in: requestIds } } }),
+        prisma.helpRequest.deleteMany({ where: { requesterId: userId } }),
+      ]);
+    }
+
+    await prisma.$transaction([
+      prisma.chatMessage.deleteMany({ where: { senderId: userId } }),
+      prisma.review.deleteMany({ where: { OR: [{ reviewerId: userId }, { revieweeId: userId }] } }),
+      prisma.helpRequest.updateMany({
+        where: { volunteerId: userId },
+        data: { volunteerId: null }
+      }),
+      prisma.user.delete({ where: { id: userId } })
+    ]);
+
+    return NextResponse.json({ success: true, message: "Account deleted successfully" });
+  } catch (error) {
+    console.error("Delete account error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+

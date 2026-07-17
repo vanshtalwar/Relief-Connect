@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { AppShell } from "@/components/app-shell";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { useTranslation } from "@/components/i18n-provider";
 import type { Language } from "@/lib/i18n/dictionaries";
 
@@ -30,6 +30,7 @@ export default function ProfilePage() {
   const { data: session, status, update } = useSession();
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [inventory, setInventory] = useState<string>("");
   const [isUpdatingInventory, setIsUpdatingInventory] = useState(false);
@@ -162,6 +163,20 @@ export default function ProfilePage() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (!window.confirm("Are you absolutely sure you want to delete your account? All your requests and messages will be permanently deleted. This action cannot be undone.")) return;
+    
+    setIsDeleting(true);
+    try {
+      const res = await fetch("/api/users/profile", { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete account");
+      await signOut({ callbackUrl: "/" });
+    } catch (err) {
+      alert("Failed to delete account. Please try again.");
+      setIsDeleting(false);
+    }
+  };
+
   const { language, setLanguage } = useTranslation();
 
   return (
@@ -212,6 +227,15 @@ export default function ProfilePage() {
                 </dd>
               </div>
             </dl>
+          </div>
+          <div className="mt-6 pt-6 border-t border-[color:var(--border)]">
+            <button
+              onClick={handleDeleteAccount}
+              disabled={isDeleting}
+              className="w-full focus-ring rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-[13px] font-semibold text-red-500 transition-colors hover:bg-red-500/20 disabled:opacity-50"
+            >
+              {isDeleting ? "Deleting..." : "Delete Account"}
+            </button>
           </div>
         </div>
 
