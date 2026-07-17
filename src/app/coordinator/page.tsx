@@ -6,6 +6,8 @@ import { AnalyticsDashboard } from "@/components/analytics-dashboard";
 import { BroadcastAlertForm } from "@/components/broadcast-alert-form";
 import { VerificationQueue } from "@/components/verification-queue";
 import { buildCoordinatorSummary } from "@/lib/analytics";
+import { prisma } from "@/lib/prisma";
+import { UserDirectory } from "@/components/user-directory";
 
 export const metadata = {
   title: "Command Center",
@@ -24,6 +26,18 @@ export default async function CoordinatorPage() {
   }
 
   const summary = await buildCoordinatorSummary();
+  const users = await prisma.user.findMany({
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      image: true,
+      role: true,
+      isVerified: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: "desc" }
+  });
 
   return (
     <AppShell title="Coordinator command center" subtitle="Verification queue, analytics, alerts, and live operational context sit behind one role-protected entry point.">
@@ -57,6 +71,8 @@ export default async function CoordinatorPage() {
             </div>
           </section>
         </div>
+
+        <UserDirectory users={users} />
       </div>
     </AppShell>
   );
