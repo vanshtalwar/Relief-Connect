@@ -22,7 +22,9 @@ export async function POST(request: Request) {
       { expiresIn: "1h" }
     );
 
-    const resetLink = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/reset-password?token=${token}&email=${encodeURIComponent(user.email)}`;
+    const requestUrl = new URL(request.url);
+    const origin = requestUrl.origin;
+    const resetLink = `${origin}/reset-password?token=${token}&email=${encodeURIComponent(user.email)}`;
     
     console.log(`[FORGOT PASSWORD] Reset link for ${user.email}: ${resetLink}`);
 
