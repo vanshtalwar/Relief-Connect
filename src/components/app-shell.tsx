@@ -123,8 +123,17 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
           </Link>
         </div>
 
+
+        {/* RIGHT: Theme & Logout */}
+        <div className="flex items-center gap-3 pointer-events-auto">
+          <ThemeToggle />
+          <AuthActions />
+        </div>
+      </div>
+
+
         {/* CENTER: Floating Pill Navbar (Tabs Only) */}
-        <header className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 md:absolute md:top-1/2 md:-translate-y-1/2 md:bottom-auto flex h-[52px] items-center justify-center rounded-full bg-[color:var(--muted)]/95 border border-[color:var(--border)] p-1.5 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)] md:shadow-2xl backdrop-blur-xl pointer-events-auto w-auto overflow-x-auto no-scrollbar">
+        <header className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 md:absolute md:top-1/2 md:-translate-y-1/2 md:bottom-auto flex h-[52px] items-center justify-center rounded-full bg-[color:var(--muted)]/95 border border-[color:var(--border)] p-1.5 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)] md:shadow-2xl backdrop-blur-xl pointer-events-auto w-auto transform-gpu will-change-transform pb-[env(safe-area-inset-bottom)] md:pb-1.5">
           <nav className="flex items-center justify-center gap-1 sm:gap-1.5 w-auto">
             {visibleNavigation.map((item) => {
               const isActive = pathname === item.href;
@@ -232,13 +241,6 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
             )}
           </nav>
         </header>
-
-        {/* RIGHT: Theme & Logout */}
-        <div className="flex items-center gap-3 pointer-events-auto">
-          <ThemeToggle />
-          <AuthActions />
-        </div>
-      </div>
 
       {/* Main Content Area */}
       {/* On mobile, pb-24 adds space for the fixed bottom bar */}
