@@ -26,9 +26,6 @@ export default async function SignupPage() {
               Account setup
             </div>
             <h1 className="text-3xl font-semibold tracking-tight text-[color:var(--foreground)] sm:text-5xl">Create a volunteer or requester account.</h1>
-            <p className="max-w-xl text-lg leading-8 text-slate-700 dark:text-slate-300">
-              Coordinators are promoted separately. The app seeds realistic demo data so the map and analytics are never empty.
-            </p>
             <Link href="/login" className="focus-ring inline-flex rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-5 py-3 text-sm font-semibold text-[color:var(--foreground)]/90 transition hover:border-sky-400/40 hover:bg-[color:var(--surface-strong)]">
               Already have an account? Sign in
             </Link>

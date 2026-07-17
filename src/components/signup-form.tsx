@@ -12,6 +12,8 @@ export function SignupForm() {
   const [step, setStep] = useState<1 | 2>(1);
   const [formDataState, setFormDataState] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
 
   async function handleStep1(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -55,6 +57,35 @@ export function SignupForm() {
       setError("Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function handleResendOTP() {
+    if (!formDataState) return;
+    setResendMessage(null);
+    setError(null);
+    setIsResending(true);
+    
+    try {
+      const response = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formDataState),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Failed to resend code.");
+      } else {
+        setResendMessage("Verification code resent successfully!");
+        // Clear success message after 5 seconds
+        setTimeout(() => setResendMessage(null), 5000);
+      }
+    } catch (err) {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setIsResending(false);
     }
   }
 
@@ -176,11 +207,24 @@ export function SignupForm() {
             </Field>
           </div>
           
-          {error && <p className="mt-4 text-sm text-red-400 font-medium text-center">{error}</p>}
           
-          <button type="submit" disabled={isLoading} className="focus-ring mt-8 w-full rounded-full bg-sky-500 hover:bg-sky-400 px-4 py-3.5 text-sm font-bold text-slate-950 transition-colors disabled:opacity-50">
+          {error && <p className="mt-4 text-sm text-red-400 font-medium text-center">{error}</p>}
+          {resendMessage && <p className="mt-4 text-sm text-green-500 font-medium text-center">{resendMessage}</p>}
+          
+          <button type="submit" disabled={isLoading || isResending} className="focus-ring mt-8 w-full rounded-full bg-sky-500 hover:bg-sky-400 px-4 py-3.5 text-sm font-bold text-slate-950 transition-colors disabled:opacity-50">
             {isLoading ? "Verifying..." : "Verify & Create Account"}
           </button>
+          
+          <div className="mt-4 text-center">
+            <button 
+              type="button" 
+              onClick={handleResendOTP} 
+              disabled={isResending || isLoading} 
+              className="text-sm font-medium text-sky-500 hover:text-sky-400 transition-colors disabled:opacity-50"
+            >
+              {isResending ? "Resending..." : "Didn't receive a code? Resend"}
+            </button>
+          </div>
         </form>
       )}
     </div>
