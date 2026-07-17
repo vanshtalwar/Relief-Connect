@@ -51,6 +51,10 @@ export async function POST(request: Request) {
           user: process.env.GMAIL_EMAIL,
           pass: process.env.GMAIL_APP_PASSWORD,
         },
+        // Render Free Tier blocks SMTP. These timeouts ensure it fails gracefully instead of hanging forever.
+        connectionTimeout: 8000,
+        greetingTimeout: 8000,
+        socketTimeout: 8000,
       });
 
       await new Promise((resolve, reject) => {

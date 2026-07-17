@@ -59,8 +59,36 @@ export const authOptions: NextAuthOptions = {
       : []),
   ],
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
+    async jwt({ token, user, account }) {
+      if (account?.provider === "google" && user?.email) {
+        // Sync Google user with our database safely (bypassing Windows Prisma file locks)
+        let dbUser = await prisma.user.findUnique({ where: { email: user.email } });
+        
+        if (dbUser) {
+          await prisma.$executeRaw`
+            UPDATE "User" 
+            SET name = ${user.name || "Unknown"}, image = ${user.image || null} 
+            WHERE email = ${user.email}
+          `;
+          dbUser.name = user.name || "Unknown";
+          dbUser.image = user.image || null;
+        } else {
+          const id = crypto.randomUUID();
+          await prisma.$executeRaw`
+            INSERT INTO "User" (id, email, name, image, role, "isVerified", "backgroundCheck", "locationConsent", "createdAt")
+            VALUES (${id}, ${user.email}, ${user.name || "Unknown"}, ${user.image || null}, 'VICTIM', true, false, false, NOW())
+          `;
+          dbUser = await prisma.user.findUnique({ where: { id } });
+        }
+
+        if (dbUser) {
+          token.userId = dbUser.id;
+          token.role = dbUser.role;
+          token.image = dbUser.image;
+          token.phone = dbUser.phone;
+        }
+      } else if (user) {
+        // Normal credentials sign in
         token.userId = user.id;
         token.role = (user as { role?: typeof token.role }).role ?? token.role ?? "VICTIM";
         token.image = (user as { image?: string | null }).image ?? null;

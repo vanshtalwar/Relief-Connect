@@ -36,6 +36,9 @@ export async function POST(request: Request) {
             user: process.env.GMAIL_EMAIL,
             pass: process.env.GMAIL_APP_PASSWORD,
           },
+          connectionTimeout: 8000,
+          greetingTimeout: 8000,
+          socketTimeout: 8000,
         });
 
         await new Promise((resolve, reject) => {

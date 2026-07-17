@@ -1,46 +1,22 @@
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { buildCoordinatorSummary } from "@/lib/analytics";
-import { prisma } from "@/lib/prisma";
 
 export default async function Home() {
   const session = await getServerSession(authOptions);
   const isLoggedIn = !!session;
-
-  const summary = await buildCoordinatorSummary();
-
-  const activeRequestsCount = await prisma.helpRequest.count({
-    where: { status: { in: ["OPEN", "CLAIMED", "IN_PROGRESS"] } },
-  });
-  const openAlertsCount = await prisma.alert.count();
-  let unreadNotificationsCount = 0;
-  if (session?.user?.id) {
-    unreadNotificationsCount = await prisma.notification.count({
-      where: { userId: session.user.id, read: false },
-    });
-  }
-
-  const stats = [
-    { label: "Active requests", value: activeRequestsCount.toString() },
-    { label: "Open alerts", value: openAlertsCount.toString() },
-    { label: "Unread notifications", value: unreadNotificationsCount.toString() },
-    { label: "Resolution rate", value: `${summary.resolutionRate}%` },
-  ];
 
   return (
     <main className="relative min-h-screen overflow-hidden px-4 py-4 sm:px-6 lg:px-8">
       <div className="absolute left-[-12rem] top-24 -z-10 h-72 w-72 rounded-full bg-sky-500/15 blur-3xl" />
       <div className="absolute right-[-8rem] top-1/3 -z-10 h-96 w-96 rounded-full bg-cyan-400/10 blur-3xl" />
 
-
-
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 mt-8 sm:mt-14">
         <section className="glass-panel rounded-3xl p-5 sm:p-8 lg:p-10">
           {/* Header Row: Aligned to the top right of the card component */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-[color:var(--border)] pb-4 mb-6">
-            <div className="inline-flex items-center gap-2 rounded-full border border-sky-400/25 bg-sky-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-sky-600 dark:text-sky-200">
-              ReliefConnect live ops
+            <div className="inline-flex items-center gap-2 px-1">
+              <span className="text-xl font-bold tracking-tight text-[color:var(--foreground)]">Relief<span className="text-sky-500">Connect</span></span>
             </div>
             <div className="flex w-full sm:w-auto gap-2.5">
               {isLoggedIn ? (
@@ -88,34 +64,23 @@ export default async function Home() {
               <div className="h-2" />
             </div>
 
-            {isLoggedIn ? (
-              <div className="hidden sm:grid gap-3 sm:grid-cols-2 lg:w-[28rem]">
-                {stats.map((stat) => (
-                  <div key={stat.label} className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-4">
-                    <div className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{stat.label}</div>
-                    <div className="mt-2 text-3xl font-semibold text-[color:var(--foreground)]">{stat.value}</div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col justify-center rounded-2xl border border-sky-500/20 bg-[color:var(--surface)] p-6 space-y-4 lg:w-[28rem]">
-                <h3 className="text-lg font-semibold text-[color:var(--foreground)]">How ReliefConnect works</h3>
-                <div className="space-y-3 text-sm text-slate-700 dark:text-slate-300">
-                  <div className="flex gap-2">
-                    <span className="text-sky-600 dark:text-sky-400 font-bold">1.</span>
-                    <span>Victims submit requests for food, water, medical aid, or shelter.</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <span className="text-sky-600 dark:text-sky-400 font-bold">2.</span>
-                    <span>Nearby volunteers claim requests and coordinate via the interactive map.</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <span className="text-sky-600 dark:text-sky-400 font-bold">3.</span>
-                    <span>Coordinators view analytics and allocate critical resources.</span>
-                  </div>
+            <div className="flex flex-col justify-center rounded-2xl border border-sky-500/20 bg-[color:var(--surface)] p-6 space-y-4 lg:w-[28rem]">
+              <h3 className="text-lg font-semibold text-[color:var(--foreground)]">How ReliefConnect works</h3>
+              <div className="space-y-3 text-sm text-slate-700 dark:text-slate-300">
+                <div className="flex gap-2">
+                  <span className="text-sky-600 dark:text-sky-400 font-bold">1.</span>
+                  <span>Victims submit requests for food, water, medical aid, or shelter.</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-sky-600 dark:text-sky-400 font-bold">2.</span>
+                  <span>Nearby volunteers claim requests and coordinate via the interactive map.</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-sky-600 dark:text-sky-400 font-bold">3.</span>
+                  <span>Coordinators view analytics and allocate critical resources.</span>
                 </div>
               </div>
-            )}
+            </div>
           </div>
         </section>
 
