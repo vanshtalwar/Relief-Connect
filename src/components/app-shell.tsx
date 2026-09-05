@@ -95,6 +95,9 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
     if (item.href === "/coordinator") {
       return session?.user?.role === "COORDINATOR";
     }
+    if (item.href === "/my-requests") {
+      return session?.user?.role !== "COORDINATOR";
+    }
     return true;
   });
 

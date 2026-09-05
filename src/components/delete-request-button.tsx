@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 export function DeleteRequestButton({ requestId }: { requestId: string }) {
   const router = useRouter();
+  const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,7 +28,7 @@ export function DeleteRequestButton({ requestId }: { requestId: string }) {
         throw new Error(data?.error || "Failed to delete request");
       }
 
-      router.push("/my-requests");
+      router.push(session?.user?.role === "COORDINATOR" ? "/coordinator" : "/my-requests");
       router.refresh();
     } catch (err: any) {
       setError(err.message || "An error occurred");
