@@ -27,36 +27,64 @@ export function ChatInterface({ requestId }: { requestId: string }) {
   const [isSending, setIsSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const fetchMessages = async () => {
+    try {
+      const res = await fetch(`/api/messages/${requestId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.messages)) {
+          setMessages((prev) => {
+            const serverIds = new Set(data.messages.map((m: Message) => m.id));
+            const pendingOptimistic = prev.filter((m) => m.id.startsWith("temp-") && !serverIds.has(m.id));
+            return [...data.messages, ...pendingOptimistic];
+          });
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    // Fetch historical messages
-    fetch(`/api/requests/${requestId}/messages`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.messages) setMessages(data.messages);
-        setIsLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setIsLoading(false);
-      });
+    fetchMessages();
+    const interval = setInterval(fetchMessages, 2500);
 
-    // Connect to Socket.IO server on port 3001
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "";
-    const newSocket = io(socketUrl);
-    
-    newSocket.on("connect", () => {
-      newSocket.emit("join_request_room", requestId);
-    });
+    // Connect to Socket.IO server if available
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL;
+    let newSocket: Socket | null = null;
+    if (socketUrl) {
+      try {
+        newSocket = io(socketUrl, {
+          transports: ["websocket", "polling"],
+          timeout: 4000,
+          reconnectionAttempts: 2,
+        });
+        
+        newSocket.on("connect", () => {
+          newSocket?.emit("join_request_room", requestId);
+        });
 
-    newSocket.on("receive_message", (message: Message) => {
-      setMessages((prev) => [...prev, message]);
-    });
+        newSocket.on("receive_message", (message: Message) => {
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === message.id)) return prev;
+            return [...prev, message];
+          });
+        });
 
-    setSocket(newSocket);
+        setSocket(newSocket);
+      } catch (err) {
+        console.warn("Socket connection skipped:", err);
+      }
+    }
 
     return () => {
-      newSocket.emit("leave_request_room", requestId);
-      newSocket.disconnect();
+      clearInterval(interval);
+      if (newSocket) {
+        newSocket.emit("leave_request_room", requestId);
+        newSocket.disconnect();
+      }
     };
   }, [requestId]);
 
@@ -67,23 +95,60 @@ export function ChatInterface({ requestId }: { requestId: string }) {
     }
   }, [messages]);
 
-  const sendMessage = (e: React.FormEvent) => {
+  const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || !socket || !session?.user?.id || isSending) return;
+    if (!input.trim() || !session?.user?.id || isSending) return;
 
+    const content = input.trim();
+    setInput("");
     setIsSending(true);
-    socket.emit("send_message", {
+
+    const tempId = "temp-" + Date.now();
+    const optimisticMessage: Message = {
+      id: tempId,
       requestId,
       senderId: session.user.id,
-      content: input.trim(),
-    }, (response: any) => {
-      setIsSending(false);
-      if (response && response.success) {
-        setInput("");
+      content,
+      createdAt: new Date().toISOString(),
+      sender: {
+        id: session.user.id,
+        name: session.user.name || "You",
+        role: session.user.role || "VICTIM",
+        image: session.user.image || null,
+      },
+    };
+
+    setMessages((prev) => [...prev, optimisticMessage]);
+
+    try {
+      const res = await fetch(`/api/messages/${requestId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content }),
+      });
+
+      if (res.ok) {
+        const savedMessage: Message = await res.json();
+        setMessages((prev) => prev.map((m) => (m.id === tempId ? savedMessage : m)));
+
+        if (socket && socket.connected) {
+          socket.emit("send_message", {
+            requestId,
+            senderId: session.user.id,
+            content,
+          });
+        }
       } else {
-        console.error("Failed to send message", response?.error);
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
+        alert("Failed to send message. Please try again.");
       }
-    });
+    } catch (err) {
+      console.error("Message send error:", err);
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      alert("Network error: Could not send message.");
+    } finally {
+      setIsSending(false);
+    }
   };
 
   if (isLoading) {

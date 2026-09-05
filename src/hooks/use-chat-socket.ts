@@ -9,22 +9,32 @@ export function useChatSocket(
   useEffect(() => {
     if (!userId) return;
 
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "";
-    const socket = io(socketUrl);
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL;
+    if (!socketUrl) return;
 
-    socket.on("connect", () => {
-      socket.emit("join_user_room", userId);
-    });
+    try {
+      const socket = io(socketUrl, {
+        transports: ["websocket", "polling"],
+        timeout: 4000,
+        reconnectionAttempts: 2,
+      });
 
-    socket.on("new_chat_notification", (data: { requestId: string }) => {
-      // Avoid incrementing if the user is currently ON the request detail page
-      if (pathnameRef.current !== `/requests/${data.requestId}`) {
-        onNotification();
-      }
-    });
+      socket.on("connect", () => {
+        socket.emit("join_user_room", userId);
+      });
 
-    return () => {
-      socket.disconnect();
-    };
+      socket.on("new_chat_notification", (data: { requestId: string }) => {
+        // Avoid incrementing if the user is currently ON the request detail page
+        if (pathnameRef.current !== `/requests/${data.requestId}`) {
+          onNotification();
+        }
+      });
+
+      return () => {
+        socket.disconnect();
+      };
+    } catch (err) {
+      console.warn("Socket notification listener skipped:", err);
+    }
   }, [userId, pathnameRef, onNotification]);
 }

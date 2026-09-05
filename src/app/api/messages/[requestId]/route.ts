@@ -39,8 +39,9 @@ export async function GET(
 
     const isRequester = requestDetails.requesterId === userId;
     const isVolunteer = requestDetails.assignedVolunteers?.id === userId;
+    const isCoordinator = session.user.role === "COORDINATOR";
     
-    if (!isRequester && !isVolunteer) {
+    if (!isRequester && !isVolunteer && !isCoordinator) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -93,15 +94,16 @@ export async function POST(
 
     const isRequester = helpRequest.requesterId === userId;
     const isVolunteer = helpRequest.assignedVolunteers?.id === userId;
+    const isCoordinator = session.user.role === "COORDINATOR";
     
-    if (!isRequester && !isVolunteer) {
+    if (!isRequester && !isVolunteer && !isCoordinator) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Determine receiver for notification logic (basic 1-to-1 assumption for now)
+    // Determine receiver for notification logic
     const receiverId = isRequester 
-      ? (helpRequest.assignedVolunteers?.id) // Send to volunteer
-      : helpRequest.requesterId; // Send to requester
+      ? helpRequest.assignedVolunteers?.id 
+      : helpRequest.requesterId;
 
     // Save message
     const newMessage = await prisma.chatMessage.create({
@@ -118,13 +120,119 @@ export async function POST(
       }
     });
 
-    // We rely on the client to emit Socket.IO events for real-time delivery, 
-    // or we can hit our own socket server internally if we expose a REST webhook on it.
-    // For simplicity, we just save to DB and let the client emit the 'send_message' socket event.
+    if (receiverId) {
+      await prisma.notification.create({
+        data: {
+          userId: receiverId,
+          message: `New message on "${helpRequest.title}": ${parsed.data.content ? parsed.data.content.substring(0, 60) : "Photo attachment"}`,
+        }
+      }).catch(err => console.error("Notification error:", err));
+    }
 
-    return NextResponse.json(newMessage);
+    return NextResponse.json(newMessage, { status: 201 });
   } catch (error) {
     console.error("Send message error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ requestId: string }> }
+) {
+  try {
+    const { requestId } = await params;
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { messageId, content } = body;
+
+    if (!messageId || !content?.trim()) {
+      return NextResponse.json({ error: "Missing messageId or content" }, { status: 400 });
+    }
+
+    const existing = await prisma.chatMessage.findUnique({
+      where: { id: messageId },
+    });
+
+    if (!existing || existing.requestId !== requestId) {
+      return NextResponse.json({ error: "Message not found" }, { status: 404 });
+    }
+
+    if (existing.senderId !== session.user.id && session.user.role !== "COORDINATOR") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const updated = await prisma.chatMessage.update({
+      where: { id: messageId },
+      data: {
+        content: content.trim(),
+        isEdited: true,
+      },
+      include: {
+        sender: {
+          select: { id: true, name: true, image: true, role: true },
+        },
+      },
+    });
+
+    return NextResponse.json(updated);
+  } catch (error) {
+    console.error("Edit message error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ requestId: string }> }
+) {
+  try {
+    const { requestId } = await params;
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const messageId = searchParams.get("messageId");
+
+    if (!messageId) {
+      return NextResponse.json({ error: "Missing messageId" }, { status: 400 });
+    }
+
+    const existing = await prisma.chatMessage.findUnique({
+      where: { id: messageId },
+    });
+
+    if (!existing || existing.requestId !== requestId) {
+      return NextResponse.json({ error: "Message not found" }, { status: 404 });
+    }
+
+    if (existing.senderId !== session.user.id && session.user.role !== "COORDINATOR") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const updated = await prisma.chatMessage.update({
+      where: { id: messageId },
+      data: {
+        isDeleted: true,
+        content: null,
+        imageUrl: null,
+      },
+      include: {
+        sender: {
+          select: { id: true, name: true, image: true, role: true },
+        },
+      },
+    });
+
+    return NextResponse.json(updated);
+  } catch (error) {
+    console.error("Delete message error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

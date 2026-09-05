@@ -223,12 +223,12 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             </div>
           </section>
 
-          {!isOpen && session?.user?.id && (session.user.id === request.requesterId || isAssigned) && (
+          {session?.user?.id && (session.user.id === request.requesterId || isAssigned || isCoordinator) && (
             <section className="bg-[color:var(--muted)] border border-[color:var(--border)] rounded-xl shadow-sm p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
               <div>
                 <h3 className="text-[15px] font-medium text-[color:var(--foreground)]">Coordinate Response</h3>
                 <p className="text-[color:var(--foreground)]/70 mt-1.5 text-[13px] leading-relaxed max-w-md">
-                  Need to coordinate details or share a photo? Open the live chat room to communicate directly with {isAssigned ? "the requester" : "your volunteer"}.
+                  Need to coordinate details or share a photo? Open the live chat room to communicate directly with {isAssigned ? "the requester" : request.volunteer ? "your volunteer" : "volunteers and coordinators"}.
                 </p>
               </div>
               <Link 

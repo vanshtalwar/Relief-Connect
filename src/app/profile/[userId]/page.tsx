@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -7,6 +7,11 @@ import { format } from "date-fns";
 
 export default async function PublicProfilePage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = await params;
+
+  if (!userId || userId === "undefined" || userId === "null") {
+    redirect("/profile");
+  }
+
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {

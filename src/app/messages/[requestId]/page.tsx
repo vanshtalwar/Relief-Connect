@@ -65,18 +65,6 @@ export default function ChatRoomPage({ params }: { params: Promise<{ requestId: 
     scrollToBottom();
   }, [messages]);
 
-  // Prevent body scroll when chat is active
-  useEffect(() => {
-    const originalOverflow = document.body.style.overflow;
-    const originalOverscroll = document.body.style.overscrollBehavior;
-    document.body.style.overflow = "hidden";
-    document.body.style.overscrollBehavior = "none";
-    return () => {
-      document.body.style.overflow = originalOverflow;
-      document.body.style.overscrollBehavior = originalOverscroll;
-    };
-  }, []);
-
   // Dismiss context menu on click
   useEffect(() => {
     const handleClickOutside = () => setSelectedMessageId(null);
@@ -88,25 +76,26 @@ export default function ChatRoomPage({ params }: { params: Promise<{ requestId: 
     };
   }, []);
 
-  const { data: initialData, error: swrError, isLoading: isSwrLoading } = useSWR(
+  const [isSending, setIsSending] = useState(false);
+
+  const { data: initialData, error: swrError, isLoading: isSwrLoading, mutate } = useSWR(
     session?.user?.id ? `/api/messages/${requestId}` : null,
-    fetcher
+    fetcher,
+    { refreshInterval: 2000, revalidateOnFocus: true }
   );
 
   useEffect(() => {
     if (initialData) {
-      if (initialData.request && initialData.messages) {
+      if (initialData.request) {
         setRequestDetails(initialData.request);
-        // Only update messages if it's the first load or if the fetched data length is significantly different
-        // to prevent overwriting socket messages mid-typing.
+      }
+      if (Array.isArray(initialData.messages)) {
         setMessages((prev) => {
-          if (prev.length === 0 || initialData.messages.length > prev.length) {
-            return initialData.messages;
-          }
-          return prev;
+          // If previous messages have temp optimistic items, merge them safely
+          const serverIds = new Set(initialData.messages.map((m: Message) => m.id));
+          const pendingOptimistic = prev.filter((m) => m.id.startsWith("temp-") && !serverIds.has(m.id));
+          return [...initialData.messages, ...pendingOptimistic];
         });
-      } else if (Array.isArray(initialData)) {
-        setMessages(initialData);
       }
       setIsLoading(false);
     }
@@ -120,92 +109,169 @@ export default function ChatRoomPage({ params }: { params: Promise<{ requestId: 
   }, [swrError]);
 
   useEffect(() => {
-    if (isSwrLoading) setIsLoading(true);
-  }, [isSwrLoading]);
+    if (isSwrLoading && messages.length === 0) setIsLoading(true);
+    else setIsLoading(false);
+  }, [isSwrLoading, messages.length]);
 
-  // Setup Socket
+  // Setup Socket if custom socket server is configured
   useEffect(() => {
     if (!session?.user?.id) return;
 
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "";
-    const newSocket = io(socketUrl);
-    setSocket(newSocket);
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL;
+    if (!socketUrl) return;
 
-    newSocket.on("connect", () => {
-      newSocket.emit("join_request_room", requestId);
-    });
-
-    newSocket.on("receive_message", (msg: Message) => {
-      setMessages((prev) => {
-        // Prevent duplicate messages
-        if (prev.some((m) => m.id === msg.id)) return prev;
-        return [...prev, msg];
+    try {
+      const newSocket = io(socketUrl, {
+        transports: ["websocket", "polling"],
+        timeout: 4000,
+        reconnectionAttempts: 2,
       });
-    });
+      setSocket(newSocket);
 
-    newSocket.on("message_edited", (editedMsg: Message) => {
-      setMessages((prev) => prev.map(m => m.id === editedMsg.id ? editedMsg : m));
-    });
+      newSocket.on("connect", () => {
+        newSocket.emit("join_request_room", requestId);
+      });
 
-    newSocket.on("message_deleted", (deletedMsg: Message) => {
-      setMessages((prev) => prev.map(m => m.id === deletedMsg.id ? deletedMsg : m));
-    });
+      newSocket.on("receive_message", (msg: Message) => {
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
+      });
 
-    return () => {
-      newSocket.emit("leave_request_room", requestId);
-      newSocket.disconnect();
-    };
+      newSocket.on("message_edited", (editedMsg: Message) => {
+        setMessages((prev) => prev.map(m => m.id === editedMsg.id ? editedMsg : m));
+      });
+
+      newSocket.on("message_deleted", (deletedMsg: Message) => {
+        setMessages((prev) => prev.map(m => m.id === deletedMsg.id ? deletedMsg : m));
+      });
+
+      return () => {
+        newSocket.emit("leave_request_room", requestId);
+        newSocket.disconnect();
+      };
+    } catch (err) {
+      console.warn("Socket connection skipped:", err);
+    }
   }, [session?.user?.id, requestId]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !socket || !session?.user?.id) return;
+    if (!newMessage.trim() || !session?.user?.id || isSending) return;
 
     if (editingMessageId) {
-      socket.emit("edit_message", {
-        messageId: editingMessageId,
-        senderId: session.user.id,
-        content: newMessage.trim(),
-      }, (response: any) => {
-        if (!response.success) {
-          console.error("Message edit failed:", response.error);
-          alert("Failed to edit message. Please try again.");
-        }
-      });
+      const messageId = editingMessageId;
+      const content = newMessage.trim();
       setEditingMessageId(null);
       setNewMessage("");
+
+      // Optimistic update
+      setMessages((prev) =>
+        prev.map((m) => (m.id === messageId ? { ...m, content, isEdited: true } : m))
+      );
+
+      try {
+        const res = await fetch(`/api/messages/${requestId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messageId, content }),
+        });
+        if (res.ok) {
+          const updated = await res.json();
+          setMessages((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
+          mutate();
+        }
+      } catch (err) {
+        console.error("Edit failed:", err);
+      }
+
+      if (socket && socket.connected) {
+        socket.emit("edit_message", { messageId, senderId: session.user.id, content });
+      }
       return;
     }
 
-    const payload = {
-      requestId: requestId,
-      senderId: session.user.id,
-      content: newMessage.trim() || null,
-    };
-    
-    socket.emit("send_message", payload, (response: any) => {
-      if (!response.success) {
-        console.error("Message send failed:", response.error);
-        alert("Failed to send message. Please try again.");
-      }
-    });
-
+    const content = newMessage.trim();
     setNewMessage("");
+    setIsSending(true);
+
+    // Optimistic message: SHOW INSTANTLY ON SCREEN
+    const tempId = "temp-" + Date.now();
+    const optimisticMessage: Message = {
+      id: tempId,
+      senderId: session.user.id,
+      content,
+      imageUrl: null,
+      createdAt: new Date().toISOString(),
+      sender: {
+        id: session.user.id,
+        name: session.user.name || "You",
+        role: session.user.role || "VICTIM",
+        image: session.user.image || null,
+      },
+    };
+
+    setMessages((prev) => [...prev, optimisticMessage]);
+
+    try {
+      const res = await fetch(`/api/messages/${requestId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content }),
+      });
+
+      if (res.ok) {
+        const savedMessage: Message = await res.json();
+        setMessages((prev) =>
+          prev.map((m) => (m.id === tempId ? savedMessage : m))
+        );
+        mutate();
+
+        if (socket && socket.connected) {
+          socket.emit("send_message", {
+            requestId,
+            senderId: session.user.id,
+            content,
+          });
+        }
+      } else {
+        const err = await res.json().catch(() => null);
+        console.error("Message send failed:", err);
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
+        alert(err?.error || "Failed to send message.");
+      }
+    } catch (err: any) {
+      console.error("Network error sending message:", err);
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      alert("Network error: Could not send message. Please try again.");
+    } finally {
+      setIsSending(false);
+    }
   };
 
-  const handleDeleteMessage = (messageId: string) => {
-    if (!socket || !session?.user?.id) return;
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!session?.user?.id) return;
     
     if (confirm("Are you sure you want to delete this message?")) {
-      socket.emit("delete_message", {
-        messageId,
-        senderId: session.user.id
-      }, (response: any) => {
-        if (!response.success) {
-          console.error("Message delete failed:", response.error);
-          alert("Failed to delete message.");
+      setMessages((prev) =>
+        prev.map((m) => (m.id === messageId ? { ...m, isDeleted: true, content: null, imageUrl: null } : m))
+      );
+
+      try {
+        const res = await fetch(`/api/messages/${requestId}?messageId=${messageId}`, {
+          method: "DELETE",
+        });
+        if (res.ok) {
+          mutate();
         }
-      });
+      } catch (err) {
+        console.error("Delete failed:", err);
+      }
+
+      if (socket && socket.connected) {
+        socket.emit("delete_message", { messageId, senderId: session.user.id });
+      }
     }
   };
 
@@ -221,7 +287,7 @@ export default function ChatRoomPage({ params }: { params: Promise<{ requestId: 
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !socket || !session?.user?.id) return;
+    if (!file || !session?.user?.id) return;
 
     if (file.size > 5 * 1024 * 1024) {
       alert("File is too large (max 5MB)");
@@ -241,19 +307,45 @@ export default function ChatRoomPage({ params }: { params: Promise<{ requestId: 
       if (!res.ok) throw new Error("Upload failed");
       const data = await res.json();
 
-      const payload = {
-        requestId: requestId,
+      const tempId = "temp-" + Date.now();
+      const optimisticMsg: Message = {
+        id: tempId,
         senderId: session.user.id,
         content: null,
         imageUrl: data.url,
+        createdAt: new Date().toISOString(),
+        sender: {
+          id: session.user.id,
+          name: session.user.name || "You",
+          role: session.user.role || "VICTIM",
+          image: session.user.image || null,
+        },
       };
 
-      socket.emit("send_message", payload, (response: any) => {
-        if (!response.success) {
-          console.error("Image send failed:", response.error);
-          alert("Failed to send image.");
-        }
+      setMessages((prev) => [...prev, optimisticMsg]);
+
+      const msgRes = await fetch(`/api/messages/${requestId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl: data.url }),
       });
+
+      if (msgRes.ok) {
+        const saved = await msgRes.json();
+        setMessages((prev) => prev.map((m) => (m.id === tempId ? saved : m)));
+        mutate();
+
+        if (socket && socket.connected) {
+          socket.emit("send_message", {
+            requestId,
+            senderId: session.user.id,
+            imageUrl: data.url,
+          });
+        }
+      } else {
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
+        alert("Failed to send image.");
+      }
     } catch (err) {
       console.error(err);
       alert("Failed to upload image");
@@ -297,17 +389,30 @@ export default function ChatRoomPage({ params }: { params: Promise<{ requestId: 
                <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
              </svg>
            </Link>
-           <Link href={`/profile/${otherPerson?.id}`} className="block h-10 w-10 shrink-0 overflow-hidden rounded-full bg-[color:var(--surface-strong)] border border-[color:var(--border)] transition hover:ring-2 hover:ring-[#38bdf8]">
-              {otherPerson?.image ? (
-                <img src={otherPerson.image} alt={otherPerson.name} className="h-full w-full object-cover" />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-xs text-[color:var(--foreground)]/50">👤</div>
-              )}
-            </Link>
-            <div className="min-w-0 flex-1">
-              <Link href={`/profile/${otherPerson?.id}`} className="block truncate font-semibold text-[color:var(--foreground)] transition hover:text-[#38bdf8]">
-                {otherPerson ? otherPerson.name : "Waiting for volunteer..."}
+            {otherPerson ? (
+              <Link href={`/profile/${otherPerson.id}`} className="block h-10 w-10 shrink-0 overflow-hidden rounded-full bg-[color:var(--surface-strong)] border border-[color:var(--border)] transition hover:ring-2 hover:ring-[#38bdf8]">
+                {otherPerson.image ? (
+                  <img src={otherPerson.image} alt={otherPerson.name} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-xs text-[color:var(--foreground)]/50">👤</div>
+                )}
               </Link>
+            ) : (
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[color:var(--surface-strong)] border border-[color:var(--border)] text-sm text-[color:var(--foreground)]/50">
+                ⏳
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              {otherPerson ? (
+                <Link href={`/profile/${otherPerson.id}`} className="block truncate font-semibold text-[color:var(--foreground)] transition hover:text-[#38bdf8]">
+                  {otherPerson.name}
+                </Link>
+              ) : (
+                <div className="truncate font-semibold text-[color:var(--foreground)]/80 flex items-center gap-2">
+                  <span>Waiting for volunteer...</span>
+                  <span className="inline-block h-2 w-2 rounded-full bg-amber-400 animate-pulse" title="Volunteer assignment pending" />
+                </div>
+              )}
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="truncate text-xs font-medium text-[#38bdf8]">{requestDetails?.title}</span>
                 {requestDetails?.status && (
@@ -319,7 +424,7 @@ export default function ChatRoomPage({ params }: { params: Promise<{ requestId: 
             </div>
          </div>
          <Link 
-            href={`/requests/${requestDetails?.id}`}
+            href={`/requests/${requestDetails?.id || requestId}`}
             className="hidden sm:inline-flex items-center justify-center rounded-full bg-[color:var(--surface-strong)] px-4 py-2 text-xs font-semibold text-[color:var(--foreground)] transition hover:bg-[color:var(--border)]"
           >
             View Request

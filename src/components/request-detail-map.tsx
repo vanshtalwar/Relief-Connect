@@ -135,6 +135,7 @@ export function RequestDetailMap({
       <MapContainer
         center={[victimLat, victimLng]}
         zoom={14}
+        scrollWheelZoom={false}
         style={{ height: "100%", width: "100%" }}
       >
         <MapBoundsUpdater 

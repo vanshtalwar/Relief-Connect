@@ -75,6 +75,11 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
   const pathnameRef = useRef(pathname);
   useEffect(() => {
     pathnameRef.current = pathname;
+    if (typeof document !== "undefined") {
+      document.body.style.overflow = "";
+      document.body.style.overscrollBehavior = "";
+      document.documentElement.style.overflow = "";
+    }
   }, [pathname]);
 
   const handleNotification = useCallback(() => {

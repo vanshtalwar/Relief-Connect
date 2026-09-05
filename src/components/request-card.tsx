@@ -204,7 +204,7 @@ export function RequestCard({
 
   return (
     <div 
-      onClick={() => router.push(`/requests/${request.id}`)}
+      onClick={() => router.push(`/requests/${request.id}`, { scroll: true })}
       className={`cursor-pointer focus-ring glass-panel block rounded-2xl sm:rounded-3xl p-3 sm:p-5 transition duration-300 hover:shadow-2xl hover:-translate-y-0.5 ${request.isSOS ? 'border-2 border-red-500 shadow-red-500/20' : ''}`}
     >
       {request.isSOS && (
