@@ -71,12 +71,34 @@ export async function POST(request: Request) {
 
     let requesterId = session?.user?.id;
     if (!requesterId) {
-      const victim = await prisma.user.findFirst({ where: { role: "VICTIM" } });
-      requesterId = victim?.id;
-    }
+      if (parsed.data.contactEmail) {
+        const existing = await prisma.user.findUnique({
+          where: { email: parsed.data.contactEmail.toLowerCase() },
+        });
+        if (existing) {
+          requesterId = existing.id;
+        }
+      }
 
-    if (!requesterId) {
-      return NextResponse.json({ error: "No victim user found in database to assign as requester" }, { status: 400 });
+      if (!requesterId) {
+        const victim = await prisma.user.findFirst({ where: { role: "VICTIM" } });
+        requesterId = victim?.id;
+      }
+
+      if (!requesterId) {
+        const email =
+          parsed.data.contactEmail?.toLowerCase() ||
+          `guest-${Date.now()}-${Math.random().toString(36).substring(2, 7)}@reliefconnect.dev`;
+        const newUser = await prisma.user.create({
+          data: {
+            name: parsed.data.contactName || "Community Member",
+            email,
+            phone: parsed.data.contactPhone || null,
+            role: "VICTIM",
+          },
+        });
+        requesterId = newUser.id;
+      }
     }
 
     const created = await prisma.helpRequest.create({
@@ -113,8 +135,9 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ request: created }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("POST requests error:", error);
-    return NextResponse.json({ error: "Failed to create request" }, { status: 500 });
+    const message = error?.message || "Failed to create request";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

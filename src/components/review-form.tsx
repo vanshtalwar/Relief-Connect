@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export function ReviewForm({ requestId, revieweeId, role }: { requestId: string; revieweeId: string; role: "VICTIM" | "VOLUNTEER" }) {
+export function ReviewForm({ requestId, revieweeId, role }: { requestId: string; revieweeId?: string | null; role: "VICTIM" | "VOLUNTEER" }) {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -11,8 +11,16 @@ export function ReviewForm({ requestId, revieweeId, role }: { requestId: string;
   const [success, setSuccess] = useState(false);
   const router = useRouter();
 
+  if (!revieweeId) {
+    return null;
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!revieweeId) {
+      setError("Cannot submit review because no responder or requester is assigned.");
+      return;
+    }
     if (rating === 0) {
       setError("Please select a star rating.");
       return;
@@ -24,16 +32,29 @@ export function ReviewForm({ requestId, revieweeId, role }: { requestId: string;
       const res = await fetch("/api/reviews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ requestId, revieweeId, rating, comment }),
+        body: JSON.stringify({ requestId, revieweeId, rating, comment: comment.trim() || undefined }),
       });
       if (res.ok) {
         setSuccess(true);
         router.refresh();
       } else {
-        const data = await res.json();
-        setError(data.error?.message || data.error || "Failed to submit review.");
+        const data = await res.json().catch(() => null);
+        let errorMsg = "Failed to submit review.";
+        if (typeof data?.error === "string") {
+          errorMsg = data.error;
+        } else if (data?.error?.message && typeof data.error.message === "string") {
+          errorMsg = data.error.message;
+        } else if (Array.isArray(data?.error?.formErrors) && data.error.formErrors.length > 0) {
+          errorMsg = data.error.formErrors.join(", ");
+        } else if (data?.error?.fieldErrors && typeof data.error.fieldErrors === "object") {
+          const fieldValues = Object.values(data.error.fieldErrors).flat().filter(Boolean);
+          if (fieldValues.length > 0) {
+            errorMsg = String(fieldValues[0]);
+          }
+        }
+        setError(errorMsg);
       }
-    } catch (err) {
+    } catch {
       setError("Failed to submit review.");
     } finally {
       setIsSubmitting(false);

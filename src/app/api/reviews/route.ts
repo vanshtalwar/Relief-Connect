@@ -15,7 +15,21 @@ export async function POST(request: Request) {
     const parsed = reviewSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+      const flattened = parsed.error.flatten();
+      const firstError =
+        flattened.formErrors[0] ||
+        Object.values(flattened.fieldErrors).flat()[0] ||
+        "Invalid review data.";
+      return NextResponse.json({ error: firstError, details: flattened }, { status: 400 });
+    }
+
+    const reviewee = await prisma.user.findUnique({
+      where: { id: parsed.data.revieweeId },
+      select: { id: true },
+    });
+
+    if (!reviewee) {
+      return NextResponse.json({ error: "The responder or requester you are rating could not be found." }, { status: 404 });
     }
 
     const existingReview = await prisma.review.findFirst({

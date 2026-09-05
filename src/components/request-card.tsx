@@ -28,6 +28,7 @@ export function RequestCard({
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [deleted, setDeleted] = useState(false);
 
   const [title, setTitle] = useState(request.title);
   const [description, setDescription] = useState(request.description);
@@ -61,8 +62,8 @@ export function RequestCard({
         setIsEditing(false);
         router.refresh();
       } else {
-        const data = await res.json();
-        setError(data.error?.message ?? "Failed to save request.");
+        const data = await res.json().catch(() => null);
+        setError(data?.error?.message ?? data?.error ?? "Failed to save request.");
       }
     } catch {
       setError("Failed to save request.");
@@ -73,14 +74,18 @@ export function RequestCard({
 
   const handleDelete = async () => {
     setIsSaving(true);
+    setError(null);
     try {
       const res = await fetch(`/api/requests/${request.id}`, {
         method: "DELETE",
       });
       if (res.ok) {
+        setDeleted(true);
+        setIsDeleting(false);
         router.refresh();
       } else {
-        setError("Failed to delete request.");
+        const data = await res.json().catch(() => null);
+        setError(data?.error || "Failed to delete request.");
       }
     } catch {
       setError("Failed to delete request.");
@@ -88,6 +93,10 @@ export function RequestCard({
       setIsSaving(false);
     }
   };
+
+  if (deleted) {
+    return null;
+  }
 
   if (isEditing) {
     return (
@@ -163,22 +172,26 @@ export function RequestCard({
       <div className="glass-panel block rounded-3xl p-5 space-y-4">
         <div>
           <h4 className="text-sm font-semibold text-[color:var(--foreground)]">Confirm Delete</h4>
-          <p className="mt-1 text-xs text-slate-505 dark:text-slate-400">
-            Are you sure you want to delete "{request.title}"? This cannot be undone.
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            Are you sure you want to delete &quot;{request.title}&quot;? This cannot be undone.
           </p>
+          {error && <p className="mt-2 text-xs font-medium text-red-400">{error}</p>}
         </div>
         <div className="flex justify-end gap-2 text-xs">
           <button
             type="button"
             className="focus-ring rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-3 py-1.5 font-medium text-[color:var(--foreground)]/80"
-            onClick={() => setIsDeleting(false)}
+            onClick={() => {
+              setIsDeleting(false);
+              setError(null);
+            }}
             disabled={isSaving}
           >
             Cancel
           </button>
           <button
             type="button"
-            className="focus-ring rounded-full bg-red-500 px-4 py-1.5 font-semibold text-white"
+            className="focus-ring rounded-full bg-red-500 px-4 py-1.5 font-semibold text-white hover:bg-red-600 transition-colors"
             onClick={handleDelete}
             disabled={isSaving}
           >
@@ -222,14 +235,14 @@ export function RequestCard({
           <button
             type="button"
             className="focus-ring rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-3 py-1.5 font-medium text-[color:var(--foreground)]/80 hover:border-sky-400/40 hover:bg-[color:var(--surface-strong)]"
-            onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
+            onClick={(e) => { e.stopPropagation(); setError(null); setIsEditing(true); }}
           >
             Edit
           </button>
           <button
             type="button"
             className="focus-ring rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1.5 font-medium text-red-400 hover:border-red-500/40 hover:bg-red-500/20"
-            onClick={(e) => { e.stopPropagation(); setIsDeleting(true); }}
+            onClick={(e) => { e.stopPropagation(); setError(null); setIsDeleting(true); }}
           >
             Delete
           </button>

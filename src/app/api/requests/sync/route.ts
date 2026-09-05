@@ -24,6 +24,16 @@ export async function POST(request: Request) {
       const victim = await prisma.user.findFirst({ where: { role: "VICTIM" } });
       defaultVictimId = victim?.id;
     }
+    if (!defaultVictimId) {
+      const fallbackVictim = await prisma.user.create({
+        data: {
+          name: "Community Member",
+          email: `offline-victim-${Date.now()}-${Math.random().toString(36).substring(2, 7)}@reliefconnect.dev`,
+          role: "VICTIM",
+        },
+      });
+      defaultVictimId = fallbackVictim.id;
+    }
 
     let defaultVolunteerId = session?.user?.id;
     if (!defaultVolunteerId) {

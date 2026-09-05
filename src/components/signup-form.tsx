@@ -14,6 +14,7 @@ export function SignupForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
+  const [devOtp, setDevOtp] = useState<string | null>(null);
 
   async function handleStep1(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -51,6 +52,9 @@ export function SignupForm() {
         return;
       }
 
+      if (data.devOtp) {
+        setDevOtp(data.devOtp);
+      }
       setFormDataState(parsed.data);
       setStep(2);
     } catch (err) {
@@ -78,6 +82,9 @@ export function SignupForm() {
       if (!response.ok) {
         setError(data.error || "Failed to resend code.");
       } else {
+        if (data.devOtp) {
+          setDevOtp(data.devOtp);
+        }
         setResendMessage("Verification code resent successfully!");
         // Clear success message after 5 seconds
         setTimeout(() => setResendMessage(null), 5000);
@@ -114,28 +121,26 @@ export function SignupForm() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Invalid verification code.");
+        setError(data.error || "Failed to complete registration.");
         setIsLoading(false);
         return;
       }
 
-      // Automatically log the user in
       const result = await signIn("credentials", {
         email: payload.email,
         password: payload.password,
         redirect: false,
-        callbackUrl: "/dashboard",
       });
 
       if (result?.error) {
-        setError("Account created, but error signing in. Please log in manually.");
-        router.push("/login");
+        window.location.href = "/login?signup=success";
         return;
       }
 
-      router.push(result?.url ?? "/dashboard");
+      window.location.href = "/dashboard";
     } catch (err) {
-      setError("Verification failed. Please try again.");
+      setError("Failed to register. Please try again.");
+    } finally {
       setIsLoading(false);
     }
   }
@@ -202,6 +207,13 @@ export function SignupForm() {
               We sent a 6-digit verification code to <br/>
               <span className="font-semibold text-[color:var(--foreground)]">{formDataState?.email}</span>
             </p>
+            {devOtp && (
+              <div className="mt-3 mx-4 p-2 bg-sky-500/10 border border-sky-500/20 rounded-xl text-center">
+                <p className="text-xs text-sky-400">
+                  Verification Code: <span className="font-mono font-bold text-sm tracking-widest text-sky-300 ml-1">{devOtp}</span>
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="px-4 sm:px-8">
@@ -210,6 +222,7 @@ export function SignupForm() {
                 name="otp" 
                 type="text" 
                 maxLength={6} 
+                defaultValue={devOtp ?? undefined}
                 className="input text-center text-2xl tracking-[0.5em] font-mono py-4 font-bold" 
                 placeholder="------" 
                 required 

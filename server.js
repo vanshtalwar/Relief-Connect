@@ -1,3 +1,20 @@
+const fs = require("fs");
+const path = require("path");
+const dotenv = require("dotenv");
+
+// Load .env.local first, then .env
+if (fs.existsSync(path.resolve(__dirname, ".env.local"))) {
+  dotenv.config({ path: path.resolve(__dirname, ".env.local") });
+}
+if (fs.existsSync(path.resolve(__dirname, ".env"))) {
+  dotenv.config({ path: path.resolve(__dirname, ".env") });
+}
+
+// Support Vercel Postgres / Neon integration environment variable names
+if (!process.env.DATABASE_URL && process.env.POSTGRES_PRISMA_URL) {
+  process.env.DATABASE_URL = process.env.POSTGRES_PRISMA_URL;
+}
+
 const { createServer } = require("http");
 
 const next = require("next");
@@ -6,7 +23,7 @@ const { PrismaClient } = require("@prisma/client");
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost";
-const port = process.env.PORT || 3000;
+const port = parseInt(process.env.PORT, 10) || 3000;
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 

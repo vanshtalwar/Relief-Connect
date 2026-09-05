@@ -55,11 +55,27 @@ export async function PATCH(request: Request, { params }: Params) {
 export async function DELETE(_request: Request, { params }: Params) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== "COORDINATOR") {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id } = await params;
+
+    const existing = await prisma.helpRequest.findUnique({
+      where: { id },
+      select: { requesterId: true },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: "Request not found" }, { status: 404 });
+    }
+
+    const isCoordinator = session.user.role === "COORDINATOR";
+    const isOwner = existing.requesterId === session.user.id;
+
+    if (!isCoordinator && !isOwner) {
+      return NextResponse.json({ error: "Forbidden: You can only delete your own requests" }, { status: 403 });
+    }
 
     await prisma.$transaction([
       prisma.statusEvent.deleteMany({ where: { requestId: id } }),
@@ -69,8 +85,8 @@ export async function DELETE(_request: Request, { params }: Params) {
     ]);
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     console.error("DELETE request error:", error);
-    return NextResponse.json({ error: "Failed to delete request" }, { status: 500 });
+    return NextResponse.json({ error: error?.message || "Failed to delete request" }, { status: 500 });
   }
 }

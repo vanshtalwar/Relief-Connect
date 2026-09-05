@@ -172,13 +172,31 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                 </div>
               )}
               
-              {request.status === "RESOLVED" && session?.user?.id && !existingReview && (session.user.id === request.requesterId || isAssigned) && (
+              {request.status === "RESOLVED" && session?.user?.id && !existingReview && (
+                ((session.user.id === request.requesterId && Boolean(request.volunteerId)) ||
+                 (isAssigned && Boolean(request.requesterId))) ? (
+                  <div className="mt-8 border-t border-[color:var(--border)] pt-6">
+                    <ReviewForm
+                      requestId={request.id}
+                      revieweeId={session.user.id === request.requesterId ? request.volunteerId! : request.requesterId}
+                      role={session.user.id === request.requesterId ? "VICTIM" : "VOLUNTEER"}
+                    />
+                  </div>
+                ) : null
+              )}
+
+              {existingReview && (
                 <div className="mt-8 border-t border-[color:var(--border)] pt-6">
-                  <ReviewForm
-                    requestId={request.id}
-                    revieweeId={session.user.id === request.requesterId ? request.volunteerId! : request.requesterId}
-                    role={session.user.id === request.requesterId ? "VICTIM" : "VOLUNTEER"}
-                  />
+                  <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-5 text-center">
+                    <p className="font-semibold text-emerald-600 dark:text-emerald-400">
+                      ★ You rated this response {existingReview.rating}/5 stars
+                    </p>
+                    {existingReview.comment && (
+                      <p className="text-sm mt-1 text-emerald-700/80 dark:text-emerald-300/80 italic">
+                        &quot;{existingReview.comment}&quot;
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
               
@@ -188,7 +206,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                 </div>
               )}
               
-              {isCoordinator && <DeleteRequestButton requestId={request.id} />}
+              {(isCoordinator || isOwnRequest) && <DeleteRequestButton requestId={request.id} />}
             </div>
             
             <div className="mt-auto">

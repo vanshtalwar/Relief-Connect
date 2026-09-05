@@ -31,8 +31,11 @@ export function ResolveRequestForm({ requestId }: { requestId: string }) {
       if (res.ok) {
         router.refresh();
       } else {
-        const data = await res.json();
-        setError(data.error ?? "Failed to resolve request.");
+        const data = await res.json().catch(() => null);
+        const errorMsg = typeof data?.error === "string"
+          ? data.error
+          : data?.error?.message || "Failed to resolve request.";
+        setError(errorMsg);
       }
     } catch {
       setError("Failed to resolve request.");

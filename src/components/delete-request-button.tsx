@@ -22,10 +22,11 @@ export function DeleteRequestButton({ requestId }: { requestId: string }) {
       });
 
       if (!res.ok) {
-        throw new Error("Failed to delete request");
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || "Failed to delete request");
       }
 
-      router.push("/dashboard");
+      router.push("/my-requests");
       router.refresh();
     } catch (err: any) {
       setError(err.message || "An error occurred");
@@ -38,7 +39,7 @@ export function DeleteRequestButton({ requestId }: { requestId: string }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-red-500/20 bg-red-500/5 p-4">
         <div>
           <h4 className="text-[13px] font-semibold text-red-400">Danger Zone</h4>
-          <p className="text-[12px] text-[#A0A0A0] mt-1">If this request is a duplicate or violates guidelines, you can permanently remove it.</p>
+          <p className="text-[12px] text-[#A0A0A0] mt-1">Permanently remove this request and its associated records.</p>
           {error && <p className="text-[11px] text-red-400 mt-2">{error}</p>}
         </div>
         <button

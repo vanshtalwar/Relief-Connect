@@ -110,7 +110,13 @@ export function RequestForm() {
       const payload = await response.json();
 
       if (!response.ok) {
-        setSubmitError(payload?.error?._errors?.[0] ?? "We could not submit the request. Please try again.");
+        const errorMsg =
+          typeof payload?.error === "string"
+            ? payload.error
+            : payload?.error?._errors?.[0] ??
+              payload?.message ??
+              "We could not submit the request. Please try again.";
+        setSubmitError(errorMsg);
         return;
       }
 

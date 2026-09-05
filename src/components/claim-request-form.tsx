@@ -34,8 +34,17 @@ export function ClaimRequestForm({ requestId, actionLabel = "Claim Request" }: {
         setNote("");
         router.refresh();
       } else {
-        const data = await res.json();
-        setError(data.error ?? "Failed to claim request.");
+        const data = await res.json().catch(() => null);
+        let errorMsg = "Failed to claim request.";
+        if (typeof data?.error === "string") {
+          errorMsg = data.error;
+        } else if (data?.error?.message) {
+          errorMsg = data.error.message;
+        } else if (data?.error?.fieldErrors) {
+          const fieldValues = Object.values(data.error.fieldErrors).flat().filter(Boolean);
+          if (fieldValues.length > 0) errorMsg = String(fieldValues[0]);
+        }
+        setError(errorMsg);
       }
     } catch {
       setError("Failed to claim request.");

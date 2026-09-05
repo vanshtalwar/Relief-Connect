@@ -47,7 +47,7 @@ export default async function MyRequestsPage() {
       {requests.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2">
           {requests.map((request) => (
-            <RequestCard key={request.id} request={request} showActions={request.requesterId === userId} />
+            <RequestCard key={request.id} request={request} showActions={request.requesterId === userId || session?.user?.role === "COORDINATOR"} />
           ))}
         </div>
       ) : (
