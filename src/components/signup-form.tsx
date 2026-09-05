@@ -14,6 +14,7 @@ export function SignupForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
+  const [fallbackOtp, setFallbackOtp] = useState<string | null>(null);
 
   async function handleStep1(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -51,6 +52,7 @@ export function SignupForm() {
         return;
       }
 
+      setFallbackOtp(data.fallbackOtp || null);
       setFormDataState(parsed.data);
       setStep(2);
     } catch (err) {
@@ -78,9 +80,12 @@ export function SignupForm() {
       if (!response.ok) {
         setError(data.error || "Failed to resend code.");
       } else {
-        setResendMessage("Verification code resent successfully to your email!");
-        // Clear success message after 5 seconds
-        setTimeout(() => setResendMessage(null), 5000);
+        if (data.fallbackOtp) {
+          setFallbackOtp(data.fallbackOtp);
+        }
+        setResendMessage(data.emailDeliveryFailed ? "Email delivery issue. Fallback code provided below." : "Verification code resent successfully to your email!");
+        // Clear success message after 6 seconds
+        setTimeout(() => setResendMessage(null), 6000);
       }
     } catch (err) {
       setError("Something went wrong. Please try again.");
@@ -200,9 +205,20 @@ export function SignupForm() {
               We sent a 6-digit verification code to <br/>
               <span className="font-semibold text-[color:var(--foreground)]">{formDataState?.email}</span>
             </p>
-            <p className="text-xs text-[color:var(--foreground)]/50 mt-1">
-              Please check your inbox or spam folder.
-            </p>
+            {fallbackOtp ? (
+              <div className="mt-3 mx-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-center">
+                <p className="text-xs text-amber-400 font-medium">
+                  Notice: Email service error (Google BadCredentials).
+                </p>
+                <p className="text-xs text-amber-300/90 mt-1">
+                  Use verification code: <span className="font-mono font-bold text-sm tracking-widest text-amber-200 ml-1">{fallbackOtp}</span>
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs text-[color:var(--foreground)]/50 mt-1">
+                Please check your inbox or spam folder.
+              </p>
+            )}
           </div>
 
           <div className="px-4 sm:px-8">

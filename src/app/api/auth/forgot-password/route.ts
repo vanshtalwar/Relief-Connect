@@ -28,12 +28,15 @@ export async function POST(request: Request) {
     
     console.log(`[FORGOT PASSWORD] Reset link for ${user.email}: ${resetLink}`);
 
+    const gmailEmail = process.env.GMAIL_EMAIL?.replace(/['"\s]/g, "").trim();
+    const gmailPassword = process.env.GMAIL_APP_PASSWORD?.replace(/['"\s]/g, "").trim();
+
     const isGmailConfigured = Boolean(
-      process.env.GMAIL_EMAIL &&
-      process.env.GMAIL_EMAIL !== "[SENSITIVE]" &&
-      process.env.GMAIL_EMAIL.includes("@") &&
-      process.env.GMAIL_APP_PASSWORD &&
-      process.env.GMAIL_APP_PASSWORD !== "[SENSITIVE]"
+      gmailEmail &&
+      gmailEmail !== "[SENSITIVE]" &&
+      gmailEmail.includes("@") &&
+      gmailPassword &&
+      gmailPassword !== "[SENSITIVE]"
     );
 
     if (isGmailConfigured) {
@@ -41,12 +44,12 @@ export async function POST(request: Request) {
         const transporter = nodemailer.createTransport({
           service: "gmail",
           auth: {
-            user: process.env.GMAIL_EMAIL,
-            pass: process.env.GMAIL_APP_PASSWORD,
+            user: gmailEmail,
+            pass: gmailPassword,
           },
-          connectionTimeout: 8000,
-          greetingTimeout: 8000,
-          socketTimeout: 8000,
+          connectionTimeout: 10000,
+          greetingTimeout: 10000,
+          socketTimeout: 10000,
         });
 
         await new Promise((resolve, reject) => {
