@@ -23,6 +23,15 @@ export function RequestForm() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const { t } = useTranslation();
   const { data: session } = useSession();
+  const getSafeUuid = () =>
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+          const r = (Math.random() * 16) | 0;
+          const v = c === "x" ? r : (r & 0x3) | 0x8;
+          return v.toString(16);
+        });
+
   const form = useForm<RequestInput>({
     resolver: zodResolver(requestSchema),
     defaultValues: {
@@ -36,7 +45,7 @@ export function RequestForm() {
       contactName: "",
       contactPhone: "",
       contactEmail: "",
-      clientUuid: crypto.randomUUID(),
+      clientUuid: getSafeUuid(),
     },
   });
 
@@ -44,15 +53,14 @@ export function RequestForm() {
 
   const reverseGeocode = async (lat: number, lng: number) => {
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+      const res = await fetch(`/api/geocode?lat=${lat}&lng=${lng}`);
       if (res.ok) {
         const data = await res.json();
-        form.setValue("locationName", data.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+        form.setValue("locationName", data.locationName || `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
       } else {
         form.setValue("locationName", `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
       }
     } catch (err) {
-      console.error("Reverse geocoding error:", err);
       form.setValue("locationName", `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
     }
   };
@@ -80,8 +88,8 @@ export function RequestForm() {
           form.setValue("longitude", longitude);
           await reverseGeocode(latitude, longitude);
         },
-        (err) => console.log("Geolocation error:", err),
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        (err) => console.log("Geolocation notice:", err),
+        { enableHighAccuracy: false, timeout: 5000, maximumAge: 300000 }
       );
     }
   }, []);
@@ -96,18 +104,23 @@ export function RequestForm() {
       if (typeof navigator !== "undefined" && !navigator.onLine) {
         await enqueueAction({ type: "CREATE_REQUEST", payload: data });
         alert("You are offline. Your request has been safely queued and will sync when connection is restored.");
-        router.replace("/dashboard");
-        router.refresh();
+        window.location.href = "/dashboard";
         return;
       }
+
+      // Ensure fresh UUID on each submission attempt
+      const submissionData = {
+        ...data,
+        clientUuid: getSafeUuid(),
+      };
 
       const response = await fetch("/api/requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(submissionData),
       });
 
-      const payload = await response.json();
+      const payload = await response.json().catch(() => null);
 
       if (!response.ok) {
         const errorMsg =
@@ -120,10 +133,14 @@ export function RequestForm() {
         return;
       }
 
-      router.replace(`/requests/${payload.request.id}`);
-      router.refresh();
-    } catch {
-      setSubmitError("We could not submit the request. Please try again.");
+      if (payload?.request?.id) {
+        window.location.href = `/requests/${payload.request.id}`;
+      } else {
+        window.location.href = "/dashboard";
+      }
+    } catch (err: any) {
+      console.error("Submission error:", err);
+      setSubmitError(err?.message || "We could not submit the request. Please check your connection and try again.");
     } finally {
       setIsSubmitting(false);
     }

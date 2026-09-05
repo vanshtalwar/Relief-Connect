@@ -21,10 +21,14 @@ cloudinary.config({
 export async function POST(request: Request) {
   try {
     if (ratelimit) {
-      const ip = request.headers.get("x-forwarded-for") || "127.0.0.1";
-      const { success } = await ratelimit.limit(`upload_post_${ip}`);
-      if (!success) {
-        return NextResponse.json({ error: "Too many uploads. Please try again later." }, { status: 429 });
+      try {
+        const ip = request.headers.get("x-forwarded-for") || "127.0.0.1";
+        const { success } = await ratelimit.limit(`upload_post_${ip}`);
+        if (!success) {
+          return NextResponse.json({ error: "Too many uploads. Please try again later." }, { status: 429 });
+        }
+      } catch (rateLimitErr) {
+        console.warn("Upload ratelimit check skipped due to connection issue:", rateLimitErr);
       }
     }
 

@@ -103,21 +103,19 @@ export default async function DashboardPage() {
 
             {/* Actions aligned to the right corner of the banner */}
             <div className="flex items-center gap-3">
+              {userRole !== "COORDINATOR" && <SOSButton />}
               {userRole === "VICTIM" && (
-                <>
-                  <SOSButton />
-                  <Link
-                    href="/requests/new"
-                    className="focus-ring flex items-center gap-2 rounded-full bg-[color:var(--foreground)] px-5 py-2 text-[12px] font-bold uppercase tracking-wider text-[color:var(--background)] transition hover:-translate-y-0.5 hover:bg-opacity-80 shadow-md"
-                  >
-                    <PlusIcon />
-                    <span>New Request</span>
-                  </Link>
-                </>
+                <Link
+                  href="/requests/new"
+                  className="focus-ring flex items-center gap-2 rounded-full bg-[color:var(--foreground)] px-5 py-2 text-[12px] font-bold uppercase tracking-wider text-[color:var(--background)] transition hover:-translate-y-0.5 hover:bg-opacity-80 shadow-md"
+                >
+                  <PlusIcon />
+                  <span>New Request</span>
+                </Link>
               )}
               {userRole === "VOLUNTEER" && (
                 <p className="text-[11px] text-[color:var(--foreground)]/50 w-full text-left md:max-w-[180px] md:text-right font-medium leading-relaxed">
-                  To post a new request, switch your role to <Link href="/profile" className="underline decoration-[color:var(--foreground)]/20 hover:text-[#38bdf8] hover:decoration-[#38bdf8] transition-colors">Victim in Profile</Link>.
+                  To post a normal request, switch role in <Link href="/profile" className="underline decoration-[color:var(--foreground)]/20 hover:text-[#38bdf8] hover:decoration-[#38bdf8] transition-colors">Profile</Link>.
                 </p>
               )}
             </div>

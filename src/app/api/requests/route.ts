@@ -21,11 +21,12 @@ export async function GET(request: Request) {
     const dateFilter = url.searchParams.get("date");
     const statusFilter = url.searchParams.get("status");
 
+    const isValidDate = dateFilter && !isNaN(Date.parse(dateFilter));
     const requests = await prisma.helpRequest.findMany({
       where: {
         ...(categoryFilter ? { category: categoryFilter as any } : {}),
         ...(statusFilter ? { status: statusFilter as any } : {}),
-        ...(dateFilter ? {
+        ...(isValidDate ? {
           createdAt: {
             gte: new Date(`${dateFilter}T00:00:00.000Z`),
             lt: new Date(`${dateFilter}T23:59:59.999Z`),
@@ -53,23 +54,42 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    if (ratelimit) {
-      const ip = request.headers.get("x-forwarded-for") || "127.0.0.1";
-      const { success } = await ratelimit.limit(`requests_post_${ip}`);
-      if (!success) {
-        return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+    const session = await getServerSession(authOptions);
+    const body = await request.json();
+
+    // Exempt emergency SOS distress signals from rate limits; gracefully catch rate limit network errors
+    if (ratelimit && !body?.isSOS) {
+      try {
+        const ip = request.headers.get("x-forwarded-for") || "127.0.0.1";
+        const { success } = await ratelimit.limit(`requests_post_${ip}`);
+        if (!success) {
+          return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+        }
+      } catch (rateLimitErr) {
+        console.warn("Ratelimit check skipped due to connection issue:", rateLimitErr);
       }
     }
 
-    const session = await getServerSession(authOptions);
-    const body = await request.json();
     const parsed = requestSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+      const flattened = parsed.error.flatten();
+      const firstError = flattened.formErrors[0] || Object.values(flattened.fieldErrors).flat()[0] || "Invalid request data";
+      return NextResponse.json({ error: firstError, details: flattened }, { status: 400 });
     }
 
     let requesterId = session?.user?.id;
+    if (requesterId) {
+      // Validate that session user ID actually exists in database to prevent foreign key errors
+      const userExists = await prisma.user.findUnique({
+        where: { id: requesterId },
+        select: { id: true },
+      });
+      if (!userExists) {
+        requesterId = undefined;
+      }
+    }
+
     if (!requesterId) {
       if (parsed.data.contactEmail) {
         const existing = await prisma.user.findUnique({
@@ -101,6 +121,16 @@ export async function POST(request: Request) {
       }
     }
 
+    // Ensure clientUuid is unique to prevent database constraint violation
+    let clientUuid = parsed.data.clientUuid;
+    const existingReq = await prisma.helpRequest.findUnique({
+      where: { clientUuid },
+      select: { id: true },
+    });
+    if (existingReq) {
+      clientUuid = crypto.randomUUID();
+    }
+
     const created = await prisma.helpRequest.create({
       data: {
         title: parsed.data.title,
@@ -112,7 +142,7 @@ export async function POST(request: Request) {
         locationName: parsed.data.locationName || null,
         photoUrl: parsed.data.photoUrl || null,
         isSOS: parsed.data.isSOS || false,
-        clientUuid: parsed.data.clientUuid,
+        clientUuid,
         requesterId,
         statusHistory: {
           create: {
@@ -132,7 +162,20 @@ export async function POST(request: Request) {
         userId: requesterId,
         message: `Request "${created.title}" is now pending volunteer review.`,
       },
-    });
+    }).catch(err => console.error("Notification create error:", err));
+
+    // For SOS distress signals, also generate an active Alert record
+    if (created.isSOS) {
+      await prisma.alert.create({
+        data: {
+          message: `🚨 CRITICAL SOS PANIC: Immediate rescue needed near ${created.locationName || "reported coordinates"}!`,
+          latitude: created.latitude,
+          longitude: created.longitude,
+          radiusKm: 25,
+          createdBy: requesterId,
+        },
+      }).catch(err => console.error("SOS Alert create error:", err));
+    }
 
     return NextResponse.json({ request: created }, { status: 201 });
   } catch (error: any) {
