@@ -14,7 +14,6 @@ export function SignupForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
-  const [devOtp, setDevOtp] = useState<string | null>(null);
 
   async function handleStep1(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -52,9 +51,6 @@ export function SignupForm() {
         return;
       }
 
-      if (data.devOtp) {
-        setDevOtp(data.devOtp);
-      }
       setFormDataState(parsed.data);
       setStep(2);
     } catch (err) {
@@ -82,10 +78,7 @@ export function SignupForm() {
       if (!response.ok) {
         setError(data.error || "Failed to resend code.");
       } else {
-        if (data.devOtp) {
-          setDevOtp(data.devOtp);
-        }
-        setResendMessage("Verification code resent successfully!");
+        setResendMessage("Verification code resent successfully to your email!");
         // Clear success message after 5 seconds
         setTimeout(() => setResendMessage(null), 5000);
       }
@@ -207,13 +200,9 @@ export function SignupForm() {
               We sent a 6-digit verification code to <br/>
               <span className="font-semibold text-[color:var(--foreground)]">{formDataState?.email}</span>
             </p>
-            {devOtp && (
-              <div className="mt-3 mx-4 p-2 bg-sky-500/10 border border-sky-500/20 rounded-xl text-center">
-                <p className="text-xs text-sky-400">
-                  Verification Code: <span className="font-mono font-bold text-sm tracking-widest text-sky-300 ml-1">{devOtp}</span>
-                </p>
-              </div>
-            )}
+            <p className="text-xs text-[color:var(--foreground)]/50 mt-1">
+              Please check your inbox or spam folder.
+            </p>
           </div>
 
           <div className="px-4 sm:px-8">
@@ -222,7 +211,6 @@ export function SignupForm() {
                 name="otp" 
                 type="text" 
                 maxLength={6} 
-                defaultValue={devOtp ?? undefined}
                 className="input text-center text-2xl tracking-[0.5em] font-mono py-4 font-bold" 
                 placeholder="------" 
                 required 

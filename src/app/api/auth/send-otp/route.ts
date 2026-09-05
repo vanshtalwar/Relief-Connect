@@ -43,74 +43,67 @@ export async function POST(request: Request) {
       DO UPDATE SET otp = ${otp}, "expiresAt" = ${expiresAt}, "createdAt" = NOW()
     `;
 
-    // Send email if valid credentials are provided
+    // Ensure latest env variables are loaded
+    const gmailEmail = process.env.GMAIL_EMAIL;
+    const gmailPassword = process.env.GMAIL_APP_PASSWORD?.replace(/\s+/g, "");
+
     const isGmailConfigured = Boolean(
-      process.env.GMAIL_EMAIL &&
-      process.env.GMAIL_EMAIL !== "[SENSITIVE]" &&
-      process.env.GMAIL_EMAIL.includes("@") &&
-      process.env.GMAIL_APP_PASSWORD &&
-      process.env.GMAIL_APP_PASSWORD !== "[SENSITIVE]"
+      gmailEmail &&
+      gmailEmail !== "[SENSITIVE]" &&
+      gmailEmail.includes("@") &&
+      gmailPassword &&
+      gmailPassword !== "[SENSITIVE]"
     );
 
-    let emailSent = false;
-
-    if (isGmailConfigured) {
-      try {
-        const transporter = nodemailer.createTransport({
-          service: "gmail",
-          auth: {
-            user: process.env.GMAIL_EMAIL,
-            pass: process.env.GMAIL_APP_PASSWORD,
-          },
-          connectionTimeout: 8000,
-          greetingTimeout: 8000,
-          socketTimeout: 8000,
-        });
-
-        await new Promise((resolve, reject) => {
-          transporter.sendMail({
-            from: `"ReliefConnect" <${process.env.GMAIL_EMAIL}>`,
-            to: email,
-            subject: "Your ReliefConnect Verification Code",
-            html: `
-              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 10px;">
-                <h2 style="color: #333;">Verify your email address</h2>
-                <p style="color: #555; line-height: 1.5;">Thank you for signing up for ReliefConnect!</p>
-                <p style="color: #555; line-height: 1.5;">Your 6-digit verification code is:</p>
-                <div style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #0ea5e9; margin: 30px 0; text-align: center; background: #f8fafc; padding: 20px; border-radius: 8px;">
-                  ${otp}
-                </div>
-                <p style="color: #777; font-size: 13px;">This code will expire in 10 minutes.</p>
-                <hr style="border: none; border-top: 1px solid #eaeaea; margin: 26px 0;" />
-                <p style="color: #999; font-size: 11px;">If you didn't request this, you can safely ignore this email.</p>
-              </div>
-            `,
-          }, (err, info) => {
-            if (err) {
-              console.warn("Gmail send error:", err.message);
-              reject(err);
-            } else {
-              console.log("Email sent successfully:", info.messageId);
-              resolve(info);
-            }
-          });
-        });
-        emailSent = true;
-      } catch (err: any) {
-        console.warn("Could not dispatch email via SMTP, falling back to console log:", err.message);
-      }
+    if (!isGmailConfigured) {
+      console.error("Gmail credentials missing or incomplete in process.env. GMAIL_EMAIL:", gmailEmail);
+      return NextResponse.json({
+        error: "Email verification service is not properly configured on the server."
+      }, { status: 500 });
     }
 
-    if (!emailSent) {
-      console.log(`\n========================================`);
-      console.log(`[VERIFICATION CODE] OTP for ${email}: ${otp}`);
-      console.log(`========================================\n`);
+    try {
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: gmailEmail,
+          pass: gmailPassword,
+        },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 10000,
+      });
+
+      const info = await transporter.sendMail({
+        from: `"ReliefConnect" <${gmailEmail}>`,
+        to: email,
+        subject: "Your ReliefConnect Verification Code",
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 10px;">
+            <h2 style="color: #333;">Verify your email address</h2>
+            <p style="color: #555; line-height: 1.5;">Thank you for signing up for ReliefConnect!</p>
+            <p style="color: #555; line-height: 1.5;">Your 6-digit verification code is:</p>
+            <div style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #0ea5e9; margin: 30px 0; text-align: center; background: #f8fafc; padding: 20px; border-radius: 8px;">
+              ${otp}
+            </div>
+            <p style="color: #777; font-size: 13px;">This code will expire in 10 minutes.</p>
+            <hr style="border: none; border-top: 1px solid #eaeaea; margin: 26px 0;" />
+            <p style="color: #999; font-size: 11px;">If you didn't request this, you can safely ignore this email.</p>
+          </div>
+        `,
+      });
+
+      console.log(`[VERIFICATION CODE] OTP successfully emailed to ${email}. Message ID: ${info.messageId}`);
+    } catch (err: any) {
+      console.error("Gmail send error:", err);
+      return NextResponse.json({
+        error: `Could not send verification email: ${err?.message || "Failed to connect to email provider"}`
+      }, { status: 500 });
     }
 
     return NextResponse.json({
       success: true,
-      message: emailSent ? "Verification code sent to your email" : "Verification code generated",
-      ...(process.env.NODE_ENV !== "production" || !emailSent ? { devOtp: otp } : {})
+      message: "Verification code sent to your email",
     }, { status: 200 });
   } catch (error: any) {
     console.error("OTP send error:", error);
