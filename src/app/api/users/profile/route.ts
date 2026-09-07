@@ -6,6 +6,7 @@ import { z } from "zod";
 
 const profileSchema = z.object({
   image: z.string().or(z.literal("")).nullable().optional(),
+  phone: z.string().trim().min(7).max(20).optional().nullable(),
   inventory: z.array(z.string()).optional(),
   locationConsent: z.boolean().optional(),
   role: z.enum(["VICTIM", "VOLUNTEER"]).optional(),
@@ -20,7 +21,7 @@ export async function GET(request: Request) {
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { id: true, name: true, email: true, image: true, role: true, inventory: true, locationConsent: true },
+      select: { id: true, name: true, email: true, phone: true, image: true, role: true, inventory: true, locationConsent: true },
     });
 
     return NextResponse.json(
@@ -54,6 +55,7 @@ export async function PATCH(request: Request) {
       where: { id: session.user.id },
       data: {
         ...(parsed.data.image !== undefined ? { image: parsed.data.image || null } : {}),
+        ...(parsed.data.phone !== undefined ? { phone: parsed.data.phone ? parsed.data.phone.trim() : null } : {}),
         ...(parsed.data.inventory !== undefined ? { inventory: parsed.data.inventory } : {}),
         ...(parsed.data.locationConsent !== undefined ? { locationConsent: parsed.data.locationConsent } : {}),
         ...(parsed.data.role !== undefined ? { role: parsed.data.role } : {}),
@@ -66,7 +68,9 @@ export async function PATCH(request: Request) {
         id: updatedUser.id,
         name: updatedUser.name,
         email: updatedUser.email,
+        phone: updatedUser.phone,
         image: updatedUser.image,
+        role: updatedUser.role,
       },
     });
   } catch (error) {

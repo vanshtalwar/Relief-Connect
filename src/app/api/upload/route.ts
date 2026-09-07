@@ -52,28 +52,36 @@ export async function POST(request: Request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    if (!process.env.CLOUDINARY_CLOUD_NAME) {
-      console.warn("CLOUDINARY_CLOUD_NAME not set, falling back to mock URL for dev.");
-      return NextResponse.json({ url: `/uploads/mock-${randomUUID()}.jpg` });
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY) {
+      console.warn("CLOUDINARY credentials not configured, encoding image as data URI fallback.");
+      const base64 = buffer.toString("base64");
+      const dataUri = `data:${file.type};base64,${base64}`;
+      return NextResponse.json({ url: dataUri });
     }
 
-    const uploadPromise = new Promise<{ url: string }>((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { folder: "relief-connect" },
-        (error, result) => {
-          if (error) {
-            reject(error);
-          } else if (result) {
-            resolve({ url: result.secure_url });
+    try {
+      const uploadPromise = new Promise<{ url: string }>((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: "relief-connect" },
+          (error, result) => {
+            if (error) {
+              reject(error);
+            } else if (result) {
+              resolve({ url: result.secure_url });
+            }
           }
-        }
-      );
-      stream.end(buffer);
-    });
+        );
+        stream.end(buffer);
+      });
 
-    const result = await uploadPromise;
-    
-    return NextResponse.json({ url: result.url });
+      const result = await uploadPromise;
+      return NextResponse.json({ url: result.url });
+    } catch (cloudErr) {
+      console.warn("Cloudinary upload failed, falling back to data URI:", cloudErr);
+      const base64 = buffer.toString("base64");
+      const dataUri = `data:${file.type};base64,${base64}`;
+      return NextResponse.json({ url: dataUri });
+    }
   } catch (error: any) {
     console.error("File upload error:", error);
     return NextResponse.json({ error: error.message || "Upload failed" }, { status: 500 });

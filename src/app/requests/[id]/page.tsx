@@ -165,9 +165,25 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
               
               {request.photoUrl && (
                 <div className="mt-8">
-                  <p className="text-[13px] font-medium text-[color:var(--foreground)] mb-3">Photo Verification</p>
-                  <div className="overflow-hidden rounded-xl border border-[color:var(--border)] max-h-80 w-full bg-[color:var(--surface)]">
-                    <img src={request.photoUrl} alt="Visual damage assessment" className="w-full h-full object-cover" />
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-[13px] font-medium text-[color:var(--foreground)]">Photo Verification</p>
+                    <a
+                      href={request.photoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-sky-500 hover:text-sky-400 font-medium hover:underline flex items-center gap-1"
+                    >
+                      <span>View full size</span>
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                    </a>
+                  </div>
+                  <div className="overflow-hidden rounded-2xl border border-[color:var(--border)] max-h-96 w-full bg-[color:var(--surface)] relative group">
+                    <img 
+                      src={request.photoUrl} 
+                      alt="Visual damage assessment" 
+                      className="w-full h-full object-cover max-h-96 transition duration-300 group-hover:scale-[1.02]" 
+                      loading="lazy"
+                    />
                   </div>
                 </div>
               )}

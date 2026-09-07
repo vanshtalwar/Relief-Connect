@@ -35,6 +35,11 @@ export default function ProfilePage() {
   const [inventory, setInventory] = useState<string>("");
   const [isUpdatingInventory, setIsUpdatingInventory] = useState(false);
 
+  const [phone, setPhone] = useState<string>("");
+  const [isEditingPhone, setIsEditingPhone] = useState(false);
+  const [isUpdatingPhone, setIsUpdatingPhone] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+
   const [locationConsent, setLocationConsent] = useState(false);
   const [isUpdatingConsent, setIsUpdatingConsent] = useState(false);
 
@@ -44,14 +49,21 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (profileData?.user) {
+      if (profileData.user.phone) {
+        setPhone(profileData.user.phone);
+      } else if (session?.user?.phone) {
+        setPhone(session.user.phone);
+      }
       if (profileData.user.inventory) {
         setInventory(profileData.user.inventory.join(", "));
       }
       if (typeof profileData.user.locationConsent === "boolean") {
         setLocationConsent(profileData.user.locationConsent);
       }
+    } else if (session?.user?.phone) {
+      setPhone(session.user.phone);
     }
-  }, [profileData]);
+  }, [profileData, session?.user?.phone]);
 
   const handleInventoryUpdate = async () => {
     setIsUpdatingInventory(true);
@@ -92,6 +104,35 @@ export default function ProfilePage() {
       alert("Failed to update location consent.");
     } finally {
       setIsUpdatingConsent(false);
+    }
+  };
+
+  const handlePhoneUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanPhone = phone.trim();
+    if (cleanPhone.length < 7) {
+      setPhoneError("Phone number must be at least 7 characters.");
+      return;
+    }
+    setIsUpdatingPhone(true);
+    setPhoneError(null);
+    try {
+      const res = await fetch("/api/users/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: cleanPhone }),
+      });
+      if (res.ok) {
+        await update(); // Refresh JWT session
+        setIsEditingPhone(false);
+      } else {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error?.message || data?.error || "Failed to update phone number");
+      }
+    } catch (err: any) {
+      setPhoneError(err?.message || "Failed to update phone number.");
+    } finally {
+      setIsUpdatingPhone(false);
     }
   };
 
@@ -196,7 +237,71 @@ export default function ProfilePage() {
                 }
               />
               <Row label="Email" value={session?.user?.email ?? "victim@reliefconnect.dev"} />
-              <Row label="Phone" value={session?.user?.phone ?? "Not provided"} />
+              <div className="flex flex-col gap-2 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3">
+                <div className="flex items-center justify-between gap-4">
+                  <dt className="text-[color:var(--foreground)]/70">Phone</dt>
+                  <dd className="text-right flex items-center gap-2">
+                    {!isEditingPhone ? (
+                      <>
+                        <span className={`font-medium ${session?.user?.phone || phone ? "text-[color:var(--foreground)]" : "text-[color:var(--foreground)]/40 italic"}`}>
+                          {session?.user?.phone || phone || "Not provided"}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPhone(session?.user?.phone || profileData?.user?.phone || "");
+                            setIsEditingPhone(true);
+                            setPhoneError(null);
+                          }}
+                          className="focus-ring inline-flex items-center gap-1 rounded-md border border-[color:var(--border)] bg-[color:var(--muted)] px-2.5 py-1 text-[11px] font-semibold text-[color:var(--foreground)] hover:border-[#38bdf8]/50 transition-colors"
+                        >
+                          <svg className="w-3 h-3 text-[#38bdf8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                          <span>{session?.user?.phone || phone ? "Edit" : "Add Phone"}</span>
+                        </button>
+                      </>
+                    ) : null}
+                  </dd>
+                </div>
+                {isEditingPhone && (
+                  <form onSubmit={handlePhoneUpdate} className="mt-2 space-y-2 border-t border-[color:var(--border)]/50 pt-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="e.g. +1 555-0199 or 9876543210"
+                        className="input text-xs py-1.5 px-3 flex-1"
+                        autoFocus
+                        disabled={isUpdatingPhone}
+                      />
+                      <button
+                        type="submit"
+                        disabled={isUpdatingPhone}
+                        className="focus-ring rounded-md bg-sky-500 hover:bg-sky-400 px-3 py-1.5 text-xs font-bold text-slate-950 transition-colors disabled:opacity-50"
+                      >
+                        {isUpdatingPhone ? "Saving..." : "Save"}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isUpdatingPhone}
+                        onClick={() => {
+                          setIsEditingPhone(false);
+                          setPhoneError(null);
+                          setPhone(session?.user?.phone || profileData?.user?.phone || "");
+                        }}
+                        className="focus-ring rounded-md border border-[color:var(--border)] bg-[color:var(--muted)] px-2.5 py-1.5 text-xs font-medium text-[color:var(--foreground)]/70 hover:text-[color:var(--foreground)] transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                    {phoneError && (
+                      <p className="text-[11px] text-red-400 font-medium">{phoneError}</p>
+                    )}
+                  </form>
+                )}
+              </div>
               <div className="flex items-center justify-between gap-4 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3">
                 <dt className="text-[color:var(--foreground)]/70">Language</dt>
                 <dd className="text-right">

@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { randomUUID } from "crypto";
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
@@ -45,7 +46,6 @@ export const authOptions: NextAuthOptions = {
           };
         }
 
-        // End of fallback removal
         return null;
       },
     }),
@@ -59,9 +59,18 @@ export const authOptions: NextAuthOptions = {
       : []),
   ],
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      try {
+        if (new URL(url).origin === baseUrl) return url;
+      } catch {
+        // Fallback on malformed URLs
+      }
+      return `${baseUrl}/dashboard`;
+    },
     async jwt({ token, user, account }) {
       if (account?.provider === "google" && user?.email) {
-        // Sync Google user with our database safely (bypassing Windows Prisma file locks)
+        // Sync Google user with our database safely
         let dbUser = await prisma.user.findUnique({ where: { email: user.email } });
         
         if (dbUser) {
@@ -73,7 +82,7 @@ export const authOptions: NextAuthOptions = {
           dbUser.name = user.name || "Unknown";
           dbUser.image = user.image || null;
         } else {
-          const id = crypto.randomUUID();
+          const id = randomUUID();
           await prisma.$executeRaw`
             INSERT INTO "User" (id, email, name, image, role, "isVerified", "backgroundCheck", "locationConsent", "createdAt")
             VALUES (${id}, ${user.email}, ${user.name || "Unknown"}, ${user.image || null}, 'VICTIM', true, false, false, NOW())
@@ -83,6 +92,7 @@ export const authOptions: NextAuthOptions = {
 
         if (dbUser) {
           token.userId = dbUser.id;
+          token.name = dbUser.name;
           token.role = dbUser.role;
           token.image = dbUser.image;
           token.phone = dbUser.phone;
@@ -90,31 +100,37 @@ export const authOptions: NextAuthOptions = {
       } else if (user) {
         // Normal credentials sign in
         token.userId = user.id;
+        token.name = user.name;
         token.role = (user as { role?: typeof token.role }).role ?? token.role ?? "VICTIM";
         token.image = (user as { image?: string | null }).image ?? null;
         token.phone = (user as { phone?: string | null }).phone ?? null;
+      }
+
+      // Always sync token with latest database state on session refresh / client update()
+      if (token.userId) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.userId as string },
+          select: { role: true, phone: true, image: true, name: true },
+        });
+        if (dbUser) {
+          token.role = dbUser.role;
+          token.phone = dbUser.phone;
+          token.image = dbUser.image;
+          token.name = dbUser.name;
+        }
       }
 
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        const userId = token.userId ?? "";
-        
-        // Keep active session data in sync with the database
-        const dbUser = await prisma.user.findUnique({
-          where: { id: userId },
-          select: { image: true, role: true },
-        });
-        if (dbUser) {
-          token.image = dbUser.image;
-          token.role = dbUser.role;
+        session.user.id = (token.userId as string) ?? "";
+        if (token.name) {
+          session.user.name = token.name as string;
         }
-
-        session.user.id = userId;
-        session.user.role = token.role ?? "VICTIM";
-        session.user.image = token.image ?? null;
-        session.user.phone = token.phone ?? null;
+        session.user.role = (token.role as string) ?? "VICTIM";
+        session.user.image = (token.image as string) ?? null;
+        session.user.phone = (token.phone as string) ?? null;
       }
 
       return session;
@@ -122,5 +138,6 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: "/login",
+    error: "/login",
   },
 };

@@ -32,6 +32,8 @@ export function RequestForm() {
           return v.toString(16);
         });
 
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
   const form = useForm<RequestInput>({
     resolver: zodResolver(requestSchema),
     defaultValues: {
@@ -45,6 +47,7 @@ export function RequestForm() {
       contactName: "",
       contactPhone: "",
       contactEmail: "",
+      photoUrl: "",
       clientUuid: getSafeUuid(),
     },
   });
@@ -239,14 +242,17 @@ export function RequestForm() {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   {t.form.photoOptional}
                 </label>
+                <input type="hidden" {...form.register("photoUrl")} />
                 <input
                   type="file"
                   accept="image/*"
+                  disabled={isUploadingPhoto || isSubmitting}
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
                     const formData = new FormData();
                     formData.append("file", file);
+                    setIsUploadingPhoto(true);
                     try {
                       const res = await fetch("/api/upload", {
                         method: "POST",
@@ -254,20 +260,32 @@ export function RequestForm() {
                       });
                       if (res.ok) {
                         const data = await res.json();
-                        form.setValue("photoUrl", data.url);
+                        form.setValue("photoUrl", data.url, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+                      } else {
+                        const data = await res.json().catch(() => null);
+                        alert(data?.error || "Failed to upload photo. Please try again.");
                       }
                     } catch (err) {
                       console.error("Photo upload failed", err);
+                      alert("Photo upload failed. Please check your connection.");
+                    } finally {
+                      setIsUploadingPhoto(false);
                     }
                   }}
                   className="input py-2 text-sm text-[color:var(--foreground)]"
                 />
-                {values.photoUrl && (
+                {isUploadingPhoto && (
+                  <div className="flex items-center gap-2 mt-2 text-xs text-sky-500 dark:text-sky-400 font-medium animate-pulse">
+                    <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    <span>Uploading and verifying photo...</span>
+                  </div>
+                )}
+                {values.photoUrl && !isUploadingPhoto && (
                   <div className="mt-3 relative h-28 w-44 overflow-hidden rounded-2xl border border-[color:var(--border)] bg-slate-900/10 group">
                     <img src={values.photoUrl} alt="Upload preview" className="h-full w-full object-cover" />
                     <button
                       type="button"
-                      onClick={() => form.setValue("photoUrl", "")}
+                      onClick={() => form.setValue("photoUrl", "", { shouldValidate: true, shouldDirty: true })}
                       className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-slate-900/60 text-white opacity-0 transition-opacity hover:bg-slate-900/90 group-hover:opacity-100"
                       aria-label="Remove photo"
                     >
@@ -300,12 +318,14 @@ export function RequestForm() {
       </div>
       {submitError ? <p className="mt-4 rounded-2xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">{submitError}</p> : null}
       <div className="mt-6 flex items-center justify-between">
-        <button type="button" className="focus-ring rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-2 text-sm text-[color:var(--foreground)]/80 disabled:opacity-40" disabled={step === 0 || isSubmitting} onClick={() => setStep((current) => Math.max(current - 1, 0))}>{t.common.back}</button>
+        <button type="button" className="focus-ring rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-2 text-sm text-[color:var(--foreground)]/80 disabled:opacity-40" disabled={step === 0 || isSubmitting || isUploadingPhoto} onClick={() => setStep((current) => Math.max(current - 1, 0))}>{t.common.back}</button>
         {step < stepCount - 1 ? (
-          <button type="button" className="focus-ring rounded-full bg-sky-500 px-5 py-2 text-sm font-semibold text-slate-950 disabled:opacity-40" disabled={!canAdvance || isSubmitting} onClick={() => setStep((current) => current + 1)}>{t.common.next}</button>
+          <button type="button" className="focus-ring rounded-full bg-sky-500 px-5 py-2 text-sm font-semibold text-slate-950 disabled:opacity-40" disabled={!canAdvance || isSubmitting || isUploadingPhoto} onClick={() => setStep((current) => current + 1)}>
+            {isUploadingPhoto ? "Uploading Photo..." : t.common.next}
+          </button>
         ) : (
-          <button type="submit" className="focus-ring rounded-full bg-emerald-400 px-5 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50" disabled={isSubmitting}>
-            {isSubmitting ? t.common.loading : t.common.submit}
+          <button type="submit" className="focus-ring rounded-full bg-emerald-400 px-5 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50" disabled={isSubmitting || isUploadingPhoto}>
+            {isSubmitting ? t.common.loading : isUploadingPhoto ? "Uploading Photo..." : t.common.submit}
           </button>
         )}
       </div>
