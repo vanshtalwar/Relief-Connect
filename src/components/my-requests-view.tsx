@@ -54,15 +54,7 @@ export function MyRequestsView({
     [requests, currentUserId]
   );
 
-  const openCount = useMemo(
-    () => requests.filter((r) => r.status === "OPEN").length,
-    [requests]
-  );
 
-  const resolvedCount = useMemo(
-    () => requests.filter((r) => r.status === "RESOLVED").length,
-    [requests]
-  );
 
   const filteredRequests = useMemo(() => {
     let list = requests;
@@ -139,25 +131,6 @@ export function MyRequestsView({
         )}
       </div>
 
-      {/* Summary Metrics Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 w-full min-w-0">
-        <div className="rounded-xl sm:rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-2.5 sm:p-3.5 shadow-sm min-w-0">
-          <p className="text-[10px] sm:text-[11px] font-semibold text-[color:var(--foreground)]/55 uppercase tracking-wider truncate">Total Items</p>
-          <p className="text-lg sm:text-2xl font-black text-[color:var(--foreground)] mt-0.5">{requests.length}</p>
-        </div>
-        <div className="rounded-xl sm:rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-2.5 sm:p-3.5 shadow-sm min-w-0">
-          <p className="text-[10px] sm:text-[11px] font-semibold text-sky-500 uppercase tracking-wider truncate">Posted by You</p>
-          <p className="text-lg sm:text-2xl font-black text-sky-500 mt-0.5">{postedRequests.length}</p>
-        </div>
-        <div className="rounded-xl sm:rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-2.5 sm:p-3.5 shadow-sm min-w-0">
-          <p className="text-[10px] sm:text-[11px] font-semibold text-emerald-500 uppercase tracking-wider truncate">Volunteering</p>
-          <p className="text-lg sm:text-2xl font-black text-emerald-500 mt-0.5">{claimedRequests.length}</p>
-        </div>
-        <div className="rounded-xl sm:rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-2.5 sm:p-3.5 shadow-sm min-w-0">
-          <p className="text-[10px] sm:text-[11px] font-semibold text-amber-500 uppercase tracking-wider truncate">Open / Pending</p>
-          <p className="text-lg sm:text-2xl font-black text-amber-500 mt-0.5">{openCount}</p>
-        </div>
-      </div>
 
       {/* Tabs (Segmented Control - Full width grid to prevent horizontal overflow on mobile) */}
       <div className="grid grid-cols-3 gap-1 p-1 rounded-2xl bg-[color:var(--muted)] border border-[color:var(--border)] w-full min-w-0 max-w-full">
