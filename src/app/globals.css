@@ -49,6 +49,13 @@ html[data-theme="dark"] {
   box-sizing: border-box;
 }
 
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
+}
+
 html {
   background: var(--page-bg);
 }

@@ -257,7 +257,7 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
 
       {/* Main Content Area */}
       {/* On mobile, pb-28 adds generous space for the fixed bottom bar */}
-      <main className="mx-auto flex w-full flex-1 max-w-7xl flex-col gap-4 sm:gap-5 px-3.5 pt-16 pb-28 md:pb-8 sm:px-6 lg:px-8">
+      <main className="mx-auto flex w-full min-w-0 max-w-full overflow-x-hidden flex-1 max-w-7xl flex-col gap-4 sm:gap-5 px-3 sm:px-6 lg:px-8 pt-16 pb-28 md:pb-8">
         {children}
       </main>
     </div>

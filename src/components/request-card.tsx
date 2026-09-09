@@ -104,7 +104,7 @@ export function RequestCard({
 
   if (isEditing) {
     return (
-      <form onSubmit={handleSave} className="glass-panel block rounded-2xl sm:rounded-3xl p-4 sm:p-5 space-y-3">
+      <form onSubmit={handleSave} className="glass-panel block rounded-2xl sm:rounded-3xl p-4 sm:p-5 space-y-3 w-full min-w-0 max-w-full overflow-hidden">
         <h4 className="text-sm font-semibold text-[color:var(--foreground)]">Edit Request</h4>
         {error && <p className="text-xs text-red-400">{error}</p>}
         <div className="space-y-2">
@@ -150,10 +150,10 @@ export function RequestCard({
             </select>
           </div>
         </div>
-        <div className="flex justify-end gap-2 pt-2 text-xs">
+        <div className="flex items-center justify-end gap-2 pt-2 text-xs">
           <button
             type="button"
-            className="focus-ring min-h-[36px] rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-2 font-medium text-[color:var(--foreground)]/80"
+            className="focus-ring min-h-[38px] flex-1 sm:flex-initial justify-center rounded-xl sm:rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-2 font-medium text-[color:var(--foreground)]/80 active:scale-95"
             onClick={() => setIsEditing(false)}
             disabled={isSaving}
           >
@@ -161,7 +161,7 @@ export function RequestCard({
           </button>
           <button
             type="submit"
-            className="focus-ring min-h-[36px] rounded-full bg-sky-400 px-5 py-2 font-semibold text-slate-950"
+            className="focus-ring min-h-[38px] flex-1 sm:flex-initial justify-center rounded-xl sm:rounded-full bg-sky-400 px-5 py-2 font-semibold text-slate-950 active:scale-95"
             disabled={isSaving}
           >
             {isSaving ? "Saving..." : "Save"}
@@ -173,7 +173,7 @@ export function RequestCard({
 
   if (isDeleting) {
     return (
-      <div className="glass-panel block rounded-2xl sm:rounded-3xl p-4 sm:p-5 space-y-4">
+      <div className="glass-panel block rounded-2xl sm:rounded-3xl p-4 sm:p-5 space-y-4 w-full min-w-0 max-w-full overflow-hidden">
         <div>
           <h4 className="text-sm font-semibold text-[color:var(--foreground)]">Confirm Delete</h4>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
@@ -181,10 +181,10 @@ export function RequestCard({
           </p>
           {error && <p className="mt-2 text-xs font-medium text-red-400">{error}</p>}
         </div>
-        <div className="flex justify-end gap-2 text-xs">
+        <div className="flex items-center justify-end gap-2 text-xs">
           <button
             type="button"
-            className="focus-ring min-h-[36px] rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-2 font-medium text-[color:var(--foreground)]/80"
+            className="focus-ring min-h-[38px] flex-1 sm:flex-initial justify-center rounded-xl sm:rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-2 font-medium text-[color:var(--foreground)]/80 active:scale-95"
             onClick={() => {
               setIsDeleting(false);
               setError(null);
@@ -195,7 +195,7 @@ export function RequestCard({
           </button>
           <button
             type="button"
-            className="focus-ring min-h-[36px] rounded-full bg-red-500 px-5 py-2 font-semibold text-white hover:bg-red-600 transition-colors"
+            className="focus-ring min-h-[38px] flex-1 sm:flex-initial justify-center rounded-xl sm:rounded-full bg-red-500 px-5 py-2 font-semibold text-white hover:bg-red-600 transition-colors active:scale-95"
             onClick={handleDelete}
             disabled={isSaving}
           >
@@ -209,7 +209,7 @@ export function RequestCard({
   return (
     <div 
       onClick={() => router.push(`/requests/${request.id}`, { scroll: true })}
-      className={`cursor-pointer focus-ring glass-panel block rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 transition duration-300 hover:shadow-2xl hover:-translate-y-0.5 active:scale-[0.99] touch-manipulation relative group ${request.isSOS ? 'border-2 border-red-500 shadow-red-500/20' : ''}`}
+      className={`cursor-pointer focus-ring glass-panel block rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 transition duration-300 hover:shadow-2xl hover:-translate-y-0.5 active:scale-[0.99] touch-manipulation relative group w-full min-w-0 max-w-full overflow-hidden break-words ${request.isSOS ? 'border-2 border-red-500 shadow-red-500/20' : ''}`}
     >
       {/* SOS Banner */}
       {request.isSOS && (
@@ -220,81 +220,85 @@ export function RequestCard({
       )}
 
       {/* Role & Category Header */}
-      <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[10px] sm:text-xs uppercase tracking-[0.18em] font-bold text-[color:var(--foreground)]/55">{categoryLabels[request.category]}</span>
+      <div className="flex items-center justify-between gap-2 mb-2 min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+          <span className="text-[10px] sm:text-xs uppercase tracking-wider font-bold text-[color:var(--foreground)]/60 bg-[color:var(--surface-strong)] px-2 py-0.5 rounded border border-[color:var(--border)] shrink-0">
+            {categoryLabels[request.category]}
+          </span>
           {userRoleContext === "requester" && (
-            <span className="rounded-full border border-sky-500/30 bg-sky-500/10 text-sky-500 dark:text-sky-400 px-2 py-0.5 text-[9px] sm:text-[10px] font-bold inline-flex items-center gap-1">
+            <span className="rounded-full border border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-400 px-2 py-0.5 text-[9px] sm:text-[10px] font-bold inline-flex items-center gap-1 shrink-0">
               <span>📌</span>
               <span>Your Request</span>
             </span>
           )}
           {userRoleContext === "volunteer" && (
-            <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 text-[9px] sm:text-[10px] font-bold inline-flex items-center gap-1">
+            <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 text-[9px] sm:text-[10px] font-bold inline-flex items-center gap-1 shrink-0">
               <span>🤝</span>
-              <span>You Joined Team</span>
+              <span>Joined Team</span>
             </span>
           )}
         </div>
-        <div className="rounded-full px-2.5 py-0.5 sm:px-3 sm:py-1 text-[10px] sm:text-xs font-semibold text-white shadow-sm shrink-0" style={{ backgroundColor: activeUrgency.color }}>
+        <div className="rounded-full px-2.5 py-0.5 sm:px-3 sm:py-1 text-[10px] sm:text-xs font-bold text-white shadow-sm shrink-0" style={{ backgroundColor: activeUrgency.color }}>
           {activeUrgency.label}
         </div>
       </div>
 
       {/* Title */}
-      <h3 className="text-sm sm:text-base md:text-lg font-bold text-[color:var(--foreground)] group-hover:text-sky-400 transition-colors line-clamp-1 leading-snug">
+      <h3 className="text-sm sm:text-base md:text-lg font-bold text-[color:var(--foreground)] group-hover:text-sky-400 transition-colors line-clamp-2 leading-snug break-words">
         {request.title}
       </h3>
 
-      {/* Description - ALWAYS VISIBLE on mobile with 2-line clamp */}
-      <p className="mt-1.5 line-clamp-2 text-xs sm:text-sm leading-relaxed text-[color:var(--foreground)]/70">
+      {/* Description - ALWAYS VISIBLE on mobile with line clamp */}
+      <p className="mt-1.5 line-clamp-3 sm:line-clamp-2 text-xs sm:text-sm leading-relaxed text-[color:var(--foreground)]/70 break-words">
         {request.description}
       </p>
 
       {/* Location Address if available */}
       {request.locationName && (
-        <div className="mt-2 flex items-center gap-1.5 text-[11px] text-[color:var(--foreground)]/60 truncate">
+        <div className="mt-2.5 flex items-center gap-1.5 text-[11px] sm:text-xs text-[color:var(--foreground)]/65 bg-[color:var(--surface-strong)]/60 px-2.5 py-1 rounded-lg border border-[color:var(--border)]/60 min-w-0">
           <span className="text-sky-500 shrink-0 text-xs">📍</span>
-          <span className="truncate">{request.locationName}</span>
+          <span className="truncate min-w-0 flex-1">{request.locationName}</span>
         </div>
       )}
 
       {/* Footer status & distance info */}
-      <div className="mt-3 sm:mt-4 pt-2.5 border-t border-[color:var(--border)]/60 flex items-center justify-between gap-2 text-xs text-[color:var(--foreground)]/70">
+      <div className="mt-3 sm:mt-4 pt-2.5 border-t border-[color:var(--border)]/60 flex items-center justify-between gap-2 text-xs text-[color:var(--foreground)]/70 flex-wrap sm:flex-nowrap min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-          <span className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-2.5 py-0.5 text-[10px] sm:text-xs font-medium shrink-0">
+          <span className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-2.5 py-0.5 text-[10px] sm:text-xs font-semibold shrink-0">
             {requestStatusLabels[request.status]}
           </span>
           {request.responders && request.responders.length > 0 && (
-            <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 text-[10px] sm:text-xs font-semibold inline-flex items-center gap-1 shrink-0">
+            <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 text-[10px] sm:text-xs font-bold inline-flex items-center gap-1 shrink-0">
               <span>👥</span>
               <span>{request.responders.length}</span>
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="font-semibold text-xs">{formatDistance(request.distanceKm)}</span>
-          <span className="text-sky-500 group-hover:translate-x-0.5 transition-transform text-xs font-bold sm:hidden">
-            View →
+        <div className="flex items-center gap-2 shrink-0 ml-auto sm:ml-0">
+          <span className="font-bold text-xs">{formatDistance(request.distanceKm)}</span>
+          <span className="text-sky-500 group-hover:translate-x-0.5 transition-transform text-xs font-bold">
+            Details →
           </span>
         </div>
       </div>
 
       {showActions && (
-        <div className="mt-3 flex justify-end gap-2 border-t border-[color:var(--border)] pt-2.5 text-xs">
+        <div className="mt-3 flex items-center justify-end gap-2 border-t border-[color:var(--border)] pt-2.5 text-xs">
           <button
             type="button"
-            className="focus-ring min-h-[36px] rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-3.5 py-1.5 font-semibold text-[color:var(--foreground)]/80 hover:border-sky-400/40 hover:bg-[color:var(--surface-strong)] transition-colors active:scale-95"
+            className="focus-ring min-h-[38px] flex-1 sm:flex-initial justify-center rounded-xl sm:rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-2 font-bold text-[color:var(--foreground)]/90 hover:border-sky-400/40 hover:bg-[color:var(--surface-strong)] transition-all active:scale-95 flex items-center gap-1.5"
             onClick={(e) => { e.stopPropagation(); setError(null); setIsEditing(true); }}
           >
-            Edit
+            <span>✏️</span>
+            <span>Edit</span>
           </button>
           <button
             type="button"
-            className="focus-ring min-h-[36px] rounded-full border border-red-500/20 bg-red-500/10 px-3.5 py-1.5 font-semibold text-red-500 hover:border-red-500/40 hover:bg-red-500/20 transition-colors active:scale-95"
+            className="focus-ring min-h-[38px] flex-1 sm:flex-initial justify-center rounded-xl sm:rounded-full border border-red-500/20 bg-red-500/10 px-4 py-2 font-bold text-red-500 hover:border-red-500/40 hover:bg-red-500/20 transition-all active:scale-95 flex items-center gap-1.5"
             onClick={(e) => { e.stopPropagation(); setError(null); setIsDeleting(true); }}
           >
-            Delete
+            <span>🗑️</span>
+            <span>Delete</span>
           </button>
         </div>
       )}

@@ -91,15 +91,15 @@ export function MyRequestsView({
   }, [requests, activeTab, postedRequests, claimedRequests, statusFilter, searchQuery]);
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="w-full min-w-0 max-w-full space-y-4 sm:space-y-6">
       {/* Volunteer Role Notice Banner */}
       {isVolunteer && (
-        <div className="rounded-2xl border border-sky-500/30 bg-sky-500/10 p-3.5 sm:p-5 text-sky-950 dark:text-sky-100 backdrop-blur-md shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3.5 sm:gap-4">
-          <div className="flex items-start gap-3">
+        <div className="rounded-2xl border border-sky-500/30 bg-sky-500/10 p-3.5 sm:p-5 text-sky-950 dark:text-sky-100 backdrop-blur-md shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3.5 sm:gap-4 w-full min-w-0">
+          <div className="flex items-start gap-3 min-w-0">
             <span className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl bg-sky-500/20 text-lg sm:text-xl">
               📢
             </span>
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="text-xs sm:text-sm font-bold leading-snug">Need emergency relief or aid?</p>
               <p className="text-[11px] sm:text-xs text-slate-600 dark:text-sky-200/80 mt-0.5 leading-relaxed">
                 To post a new request, switch your role to Victim in your profile settings.
@@ -108,7 +108,7 @@ export function MyRequestsView({
           </div>
           <Link
             href="/profile"
-            className="focus-ring whitespace-nowrap w-full sm:w-auto justify-center rounded-full bg-sky-500 hover:bg-sky-400 px-4 py-2.5 sm:py-2 text-xs font-bold text-slate-950 transition shadow-sm hover:-translate-y-0.5 inline-flex items-center gap-2 active:scale-95 touch-manipulation"
+            className="focus-ring whitespace-nowrap w-full sm:w-auto justify-center rounded-full bg-sky-500 hover:bg-sky-400 px-4 py-2.5 sm:py-2 text-xs font-bold text-slate-950 transition shadow-sm hover:-translate-y-0.5 inline-flex items-center gap-2 active:scale-95 touch-manipulation shrink-0"
           >
             <span>Change Role in Profile</span>
             <span className="text-sm font-bold">→</span>
@@ -117,8 +117,8 @@ export function MyRequestsView({
       )}
 
       {/* Header & Quick Action */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 w-full min-w-0">
+        <div className="min-w-0 flex-1">
           <h2 className="text-lg sm:text-2xl font-bold text-[color:var(--foreground)] tracking-tight">
             Your Relief Activity
           </h2>
@@ -129,7 +129,7 @@ export function MyRequestsView({
         {isVictim && (
           <Link
             href="/requests/new"
-            className="focus-ring w-full sm:w-auto justify-center inline-flex items-center gap-2 rounded-full bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold px-4 py-2.5 text-xs sm:text-sm uppercase tracking-wider transition shadow-md hover:-translate-y-0.5 active:scale-95 touch-manipulation"
+            className="focus-ring w-full sm:w-auto justify-center inline-flex items-center gap-2 rounded-full bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold px-4 py-2.5 text-xs sm:text-sm uppercase tracking-wider transition shadow-md hover:-translate-y-0.5 active:scale-95 touch-manipulation shrink-0"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -140,31 +140,31 @@ export function MyRequestsView({
       </div>
 
       {/* Summary Metrics Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-        <div className="rounded-xl sm:rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-2.5 sm:p-3.5 shadow-sm">
-          <p className="text-[10px] sm:text-[11px] font-semibold text-[color:var(--foreground)]/55 uppercase tracking-wider">Total Items</p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 w-full min-w-0">
+        <div className="rounded-xl sm:rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-2.5 sm:p-3.5 shadow-sm min-w-0">
+          <p className="text-[10px] sm:text-[11px] font-semibold text-[color:var(--foreground)]/55 uppercase tracking-wider truncate">Total Items</p>
           <p className="text-lg sm:text-2xl font-black text-[color:var(--foreground)] mt-0.5">{requests.length}</p>
         </div>
-        <div className="rounded-xl sm:rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-2.5 sm:p-3.5 shadow-sm">
-          <p className="text-[10px] sm:text-[11px] font-semibold text-sky-500 uppercase tracking-wider">Posted by You</p>
+        <div className="rounded-xl sm:rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-2.5 sm:p-3.5 shadow-sm min-w-0">
+          <p className="text-[10px] sm:text-[11px] font-semibold text-sky-500 uppercase tracking-wider truncate">Posted by You</p>
           <p className="text-lg sm:text-2xl font-black text-sky-500 mt-0.5">{postedRequests.length}</p>
         </div>
-        <div className="rounded-xl sm:rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-2.5 sm:p-3.5 shadow-sm">
-          <p className="text-[10px] sm:text-[11px] font-semibold text-emerald-500 uppercase tracking-wider">Volunteering</p>
+        <div className="rounded-xl sm:rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-2.5 sm:p-3.5 shadow-sm min-w-0">
+          <p className="text-[10px] sm:text-[11px] font-semibold text-emerald-500 uppercase tracking-wider truncate">Volunteering</p>
           <p className="text-lg sm:text-2xl font-black text-emerald-500 mt-0.5">{claimedRequests.length}</p>
         </div>
-        <div className="rounded-xl sm:rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-2.5 sm:p-3.5 shadow-sm">
-          <p className="text-[10px] sm:text-[11px] font-semibold text-amber-500 uppercase tracking-wider">Open / Pending</p>
+        <div className="rounded-xl sm:rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-2.5 sm:p-3.5 shadow-sm min-w-0">
+          <p className="text-[10px] sm:text-[11px] font-semibold text-amber-500 uppercase tracking-wider truncate">Open / Pending</p>
           <p className="text-lg sm:text-2xl font-black text-amber-500 mt-0.5">{openCount}</p>
         </div>
       </div>
 
-      {/* Tabs (Segmented Control) */}
-      <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-[color:var(--muted)] border border-[color:var(--border)] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {/* Tabs (Segmented Control - Full width grid to prevent horizontal overflow on mobile) */}
+      <div className="grid grid-cols-3 gap-1 p-1 rounded-2xl bg-[color:var(--muted)] border border-[color:var(--border)] w-full min-w-0 max-w-full">
         <button
           type="button"
           onClick={() => setActiveTab("ALL")}
-          className={`flex-1 min-w-[90px] py-2 px-3 rounded-xl text-xs font-bold transition-all text-center touch-manipulation active:scale-95 ${
+          className={`w-full py-2 px-1 rounded-xl text-[11px] sm:text-xs font-bold transition-all text-center touch-manipulation active:scale-95 truncate ${
             activeTab === "ALL"
               ? "bg-[color:var(--surface)] text-[color:var(--foreground)] shadow-sm border border-[color:var(--border)]"
               : "text-[color:var(--foreground)]/60 hover:text-[color:var(--foreground)]"
@@ -175,31 +175,35 @@ export function MyRequestsView({
         <button
           type="button"
           onClick={() => setActiveTab("POSTED")}
-          className={`flex-1 min-w-[120px] py-2 px-3 rounded-xl text-xs font-bold transition-all text-center touch-manipulation active:scale-95 ${
+          className={`w-full py-2 px-1 rounded-xl text-[11px] sm:text-xs font-bold transition-all text-center touch-manipulation active:scale-95 truncate ${
             activeTab === "POSTED"
               ? "bg-[color:var(--surface)] text-sky-500 shadow-sm border border-[color:var(--border)]"
               : "text-[color:var(--foreground)]/60 hover:text-[color:var(--foreground)]"
           }`}
         >
-          📌 Posted by Me ({postedRequests.length})
+          <span>📌 </span>
+          <span className="inline sm:hidden">Mine ({postedRequests.length})</span>
+          <span className="hidden sm:inline">Posted ({postedRequests.length})</span>
         </button>
         <button
           type="button"
           onClick={() => setActiveTab("CLAIMED")}
-          className={`flex-1 min-w-[125px] py-2 px-3 rounded-xl text-xs font-bold transition-all text-center touch-manipulation active:scale-95 ${
+          className={`w-full py-2 px-1 rounded-xl text-[11px] sm:text-xs font-bold transition-all text-center touch-manipulation active:scale-95 truncate ${
             activeTab === "CLAIMED"
               ? "bg-[color:var(--surface)] text-emerald-500 shadow-sm border border-[color:var(--border)]"
               : "text-[color:var(--foreground)]/60 hover:text-[color:var(--foreground)]"
           }`}
         >
-          🤝 Claimed ({claimedRequests.length})
+          <span>🤝 </span>
+          <span className="inline sm:hidden">Claimed ({claimedRequests.length})</span>
+          <span className="hidden sm:inline">Claimed Tasks ({claimedRequests.length})</span>
         </button>
       </div>
 
       {/* Search & Status Filters */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full min-w-0 max-w-full">
         {/* Search Bar */}
-        <div className="relative flex-1">
+        <div className="relative flex-1 min-w-0 w-full">
           <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-[color:var(--foreground)]/40 pointer-events-none">
             🔍
           </span>
@@ -208,21 +212,21 @@ export function MyRequestsView({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by title, location or description..."
-            className="w-full pl-9 pr-8 py-2 text-xs sm:text-sm rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] text-[color:var(--foreground)] placeholder-[color:var(--foreground)]/40 outline-none focus:border-sky-400 transition-colors"
+            className="w-full pl-9 pr-8 py-2.5 text-xs sm:text-sm rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] text-[color:var(--foreground)] placeholder-[color:var(--foreground)]/40 outline-none focus:border-sky-400 transition-colors"
           />
           {searchQuery && (
             <button
               type="button"
               onClick={() => setSearchQuery("")}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[color:var(--foreground)]/40 hover:text-[color:var(--foreground)] p-1"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[color:var(--foreground)]/40 hover:text-[color:var(--foreground)] p-1.5"
             >
               ✕
             </button>
           )}
         </div>
 
-        {/* Status Horizontal Scroll Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0">
+        {/* Status Horizontal Scroll Pills without shrink-0 so it fits mobile width cleanly */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden w-full sm:w-auto min-w-0 max-w-full touch-pan-x">
           {(
             [
               { key: "ALL", label: "All Statuses" },
@@ -236,7 +240,7 @@ export function MyRequestsView({
               key={s.key}
               type="button"
               onClick={() => setStatusFilter(s.key)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all touch-manipulation active:scale-95 ${
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap shrink-0 transition-all touch-manipulation active:scale-95 ${
                 statusFilter === s.key
                   ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-sm"
                   : "bg-[color:var(--surface)] border border-[color:var(--border)] text-[color:var(--foreground)]/70 hover:bg-[color:var(--surface-strong)]"
@@ -250,7 +254,7 @@ export function MyRequestsView({
 
       {/* Request Cards Grid */}
       {filteredRequests.length > 0 ? (
-        <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 w-full min-w-0 max-w-full">
           {filteredRequests.map((request) => (
             <RequestCard
               key={request.id}
