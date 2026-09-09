@@ -235,7 +235,7 @@ export function RequestMap({ requests }: { requests: any[] }) {
               ))}
             </div>
           </div>
-          <div className="h-[350px] sm:h-[450px] xl:h-[600px] bg-[color:var(--background)] relative z-10 rounded-3xl xl:rounded-none overflow-hidden border border-[color:var(--border)] xl:border-0">
+          <div className="h-[350px] sm:h-[450px] xl:h-[600px] bg-[color:var(--background)] relative isolate z-0 rounded-3xl xl:rounded-none overflow-hidden border border-[color:var(--border)] xl:border-0">
             <>
                 <style>{`
                   .volunteer-marker-icon {

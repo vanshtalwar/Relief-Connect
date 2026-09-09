@@ -146,3 +146,27 @@ body {
   border: none !important;
   box-shadow: none !important;
 }
+
+/* Leaflet Stacking Context & Z-Index Containment */
+/* Ensures maps, tiles, markers, popups, and zoom controls never bleed above the sticky navbar or app header */
+.leaflet-container {
+  isolation: isolate !important;
+  z-index: 0 !important;
+}
+
+.leaflet-pane {
+  z-index: 10 !important;
+}
+
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 20 !important;
+}
+
+.leaflet-control {
+  z-index: 25 !important;
+}
+
+.leaflet-popup-pane {
+  z-index: 30 !important;
+}

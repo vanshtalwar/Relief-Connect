@@ -181,7 +181,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                     ? `Live Tracking Map (${request.responders.length} ${request.responders.length === 1 ? "Responder" : "Responders"})`
                     : "Location Map"}
                 </p>
-                <div className="rounded-xl overflow-hidden border border-[color:var(--border)] shadow-sm">
+                <div className="rounded-xl overflow-hidden border border-[color:var(--border)] shadow-sm relative isolate z-0">
                   <RequestDetailMap
                     requestId={request.id}
                     victimLat={request.latitude}

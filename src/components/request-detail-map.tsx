@@ -211,7 +211,7 @@ export function RequestDetailMap({
   const nearestResponder = respondersWithDistances[0];
 
   return (
-    <div className="w-full h-80 rounded-3xl overflow-hidden border border-[color:var(--border)] relative bg-[color:var(--surface)]">
+    <div className="w-full h-80 rounded-3xl overflow-hidden border border-[color:var(--border)] relative bg-[color:var(--surface)] isolate z-0">
       <>
         <MapContainer
           center={[victimLat, victimLng]}
@@ -287,7 +287,7 @@ export function RequestDetailMap({
 
         {/* Live Distance HUD for Response Team */}
         {respondersWithDistances.length > 0 && (
-          <div className="absolute bottom-4 left-4 z-[999] bg-[color:var(--surface)]/95 border border-[color:var(--border)] rounded-2xl p-3 shadow-xl backdrop-blur-md max-w-xs sm:max-w-sm">
+          <div className="absolute bottom-4 left-4 z-20 bg-[color:var(--surface)]/95 border border-[color:var(--border)] rounded-2xl p-3 shadow-xl backdrop-blur-md max-w-xs sm:max-w-sm">
             <div className="flex items-center justify-between gap-2 border-b border-[color:var(--border)] pb-1.5 mb-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />

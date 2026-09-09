@@ -516,7 +516,7 @@ export function RequestForm() {
               </div>
 
               {/* Map Picker */}
-              <div className="h-64 w-full relative">
+              <div className="h-64 w-full relative isolate z-0">
                 <LocationPickerMap
                   latitude={values.latitude}
                   longitude={values.longitude}

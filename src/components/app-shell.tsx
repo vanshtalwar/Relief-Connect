@@ -105,7 +105,7 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
   return (
     <div className="min-h-screen bg-[color:var(--background)] flex flex-col font-sans relative">
       {/* Top Bar Container */}
-      <div className="sticky top-5 z-50 w-full px-5 sm:px-8 flex items-center justify-between pointer-events-none">
+      <div className="sticky top-5 z-[100] w-full px-5 sm:px-8 flex items-center justify-between pointer-events-none">
         
         {/* LEFT: ReliefConnect Logo */}
         <div className="flex items-center pointer-events-auto">
@@ -133,7 +133,7 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
         </div>
 
         {/* CENTER: Floating Pill Navbar (Tabs Only) */}
-        <header className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 md:absolute md:top-1/2 md:-translate-y-1/2 md:bottom-auto flex h-[52px] items-center justify-center rounded-full bg-[color:var(--muted)]/95 border border-[color:var(--border)] p-1.5 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)] md:shadow-2xl backdrop-blur-xl pointer-events-auto w-auto overflow-x-auto no-scrollbar">
+        <header className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] md:absolute md:top-1/2 md:-translate-y-1/2 md:bottom-auto flex h-[52px] items-center justify-center rounded-full bg-[color:var(--muted)]/95 border border-[color:var(--border)] p-1.5 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)] md:shadow-2xl backdrop-blur-xl pointer-events-auto w-auto overflow-x-auto no-scrollbar">
           <nav className="flex items-center justify-center gap-1 sm:gap-1.5 w-auto">
             {visibleNavigation.map((item) => {
               const isActive = pathname === item.href;
