@@ -142,12 +142,12 @@ export default async function DashboardPage() {
             </div>
 
             {/* Actions aligned to the right corner of the banner */}
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
               <SOSButton />
               {(userRole === "VICTIM" || userRole === "COORDINATOR") && (
                 <Link
                   href="/requests/new"
-                  className="focus-ring flex items-center gap-2 rounded-full bg-[color:var(--foreground)] px-5 py-2 text-[12px] font-bold uppercase tracking-wider text-[color:var(--background)] transition hover:-translate-y-0.5 hover:bg-opacity-80 shadow-md"
+                  className="focus-ring flex items-center gap-2 rounded-full bg-[color:var(--foreground)] px-4 py-2 sm:px-5 text-[11px] sm:text-[12px] font-bold uppercase tracking-wider text-[color:var(--background)] transition hover:-translate-y-0.5 hover:bg-opacity-80 shadow-md active:scale-95 touch-manipulation"
                 >
                   <PlusIcon />
                   <span>New Request</span>

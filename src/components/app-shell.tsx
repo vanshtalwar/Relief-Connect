@@ -105,43 +105,43 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
   return (
     <div className="min-h-screen bg-[color:var(--background)] flex flex-col font-sans relative">
       {/* Top Bar Container */}
-      <div className="sticky top-5 z-[100] w-full px-5 sm:px-8 flex items-center justify-between pointer-events-none">
+      <div className="sticky top-4 sm:top-5 z-[100] w-full px-3.5 sm:px-8 flex items-center justify-between pointer-events-none">
         
         {/* LEFT: ReliefConnect Logo */}
         <div className="flex items-center pointer-events-auto">
           <Link
             href="/dashboard"
-            className="focus-ring flex items-center gap-2.5 sm:gap-3 transition-all duration-300 hover:scale-[1.02] group"
+            className="focus-ring flex items-center gap-2 sm:gap-3 transition-all duration-300 hover:scale-[1.02] group"
             aria-label="Go to dashboard home"
           >
             {/* Stylish Unique Icon */}
             <div className="relative flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 to-emerald-400 shadow-[0_8px_20px_-6px_rgba(56,189,248,0.5)]">
               <div className="absolute inset-0 rounded-xl ring-1 ring-inset ring-white/20"></div>
               {/* Unique abstract diamond rescue cross */}
-              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 2L2 12l10 10 10-10L12 2z" />
                 <path d="M12 8v8" />
                 <path d="M8 12h8" />
               </svg>
             </div>
             
-            {/* Premium Typography - Perfectly Aligned */}
-            <span className="font-black text-[17px] sm:text-[22px] tracking-tight text-[color:var(--foreground)] mt-0.5">
+            {/* Premium Typography - Aligned */}
+            <span className="font-black text-[16px] sm:text-[22px] tracking-tight text-[color:var(--foreground)] mt-0.5">
               Relief<span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-emerald-400">Connect</span>
             </span>
           </Link>
         </div>
 
         {/* CENTER: Floating Pill Navbar (Tabs Only) */}
-        <header className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] md:absolute md:top-1/2 md:-translate-y-1/2 md:bottom-auto flex h-[52px] items-center justify-center rounded-full bg-[color:var(--muted)]/95 border border-[color:var(--border)] p-1.5 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)] md:shadow-2xl backdrop-blur-xl pointer-events-auto w-auto overflow-x-auto no-scrollbar">
-          <nav className="flex items-center justify-center gap-1 sm:gap-1.5 w-auto">
+        <header className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-[100] md:absolute md:top-1/2 md:-translate-y-1/2 md:bottom-auto flex h-[48px] sm:h-[52px] max-w-[calc(100vw-20px)] sm:max-w-none items-center justify-center rounded-full bg-[color:var(--muted)]/95 border border-[color:var(--border)] p-1 sm:p-1.5 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)] md:shadow-2xl backdrop-blur-xl pointer-events-auto w-auto overflow-x-auto no-scrollbar">
+          <nav className="flex items-center justify-center gap-0.5 sm:gap-1.5 w-auto">
             {visibleNavigation.map((item) => {
               const isActive = pathname === item.href;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`relative shrink-0 flex items-center justify-center gap-1 md:gap-1.5 rounded-full px-3.5 sm:px-3 py-2 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.05em] transition-colors z-10 ${
+                  className={`relative shrink-0 flex items-center justify-center gap-1 md:gap-1.5 rounded-full px-2.5 sm:px-3 py-1.5 sm:py-2 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.05em] transition-colors z-10 touch-manipulation active:scale-95 ${
                     isActive
                       ? "text-[color:var(--background)]"
                       : "text-[color:var(--foreground)]/50 hover:text-[color:var(--foreground)]"
@@ -167,7 +167,7 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
               <Link
                 href="/notifications"
                 onClick={() => setChatNotificationCount(0)}
-                className={`relative shrink-0 flex items-center justify-center gap-1 md:gap-1.5 rounded-full px-3.5 sm:px-3 py-2 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.05em] transition-colors z-10 ${
+                className={`relative shrink-0 flex items-center justify-center gap-1 md:gap-1.5 rounded-full px-2.5 sm:px-3 py-1.5 sm:py-2 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.05em] transition-colors z-10 touch-manipulation active:scale-95 ${
                   pathname === "/notifications"
                     ? "text-[color:var(--background)]"
                     : "text-[color:var(--foreground)]/50 hover:text-[color:var(--foreground)]"
@@ -195,7 +195,7 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
               <Link
                 href="/messages"
                 onClick={() => setChatNotificationCount(0)}
-                className={`relative shrink-0 flex items-center justify-center gap-1 md:gap-1.5 rounded-full px-3.5 sm:px-3 py-2 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.05em] transition-colors z-10 ${
+                className={`relative shrink-0 flex items-center justify-center gap-1 md:gap-1.5 rounded-full px-2.5 sm:px-3 py-1.5 sm:py-2 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.05em] transition-colors z-10 touch-manipulation active:scale-95 ${
                   pathname.startsWith("/messages")
                     ? "text-[color:var(--background)]"
                     : "text-[color:var(--foreground)]/50 hover:text-[color:var(--foreground)]"
@@ -222,7 +222,7 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
             {session?.user && (
               <Link
                 href="/profile"
-                className={`relative shrink-0 flex items-center justify-center gap-1 md:gap-1.5 rounded-full px-3.5 sm:px-3 py-2 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.05em] transition-colors z-10 ${
+                className={`relative shrink-0 flex items-center justify-center gap-1 md:gap-1.5 rounded-full px-2.5 sm:px-3 py-1.5 sm:py-2 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.05em] transition-colors z-10 touch-manipulation active:scale-95 ${
                   pathname === "/profile"
                     ? "text-[color:var(--background)]"
                     : "text-[color:var(--foreground)]/50 hover:text-[color:var(--foreground)]"
@@ -249,15 +249,15 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
         </header>
 
         {/* RIGHT: Theme & Logout */}
-        <div className="flex items-center gap-3 pointer-events-auto">
+        <div className="flex items-center gap-2 sm:gap-3 pointer-events-auto">
           <ThemeToggle />
           <AuthActions />
         </div>
       </div>
 
       {/* Main Content Area */}
-      {/* On mobile, pb-24 adds space for the fixed bottom bar */}
-      <main className="mx-auto flex w-full flex-1 max-w-7xl flex-col gap-5 px-4 pt-16 pb-24 md:pb-8 sm:px-6 lg:px-8">
+      {/* On mobile, pb-28 adds generous space for the fixed bottom bar */}
+      <main className="mx-auto flex w-full flex-1 max-w-7xl flex-col gap-4 sm:gap-5 px-3.5 pt-16 pb-28 md:pb-8 sm:px-6 lg:px-8">
         {children}
       </main>
     </div>

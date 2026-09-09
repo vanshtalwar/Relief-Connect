@@ -227,15 +227,15 @@ export function RequestMap({ requests }: { requests: any[] }) {
             </div>
           </div>
         </div>
-        <div className="flex flex-col xl:grid xl:grid-cols-[0.8fr_1.2fr] gap-4 xl:gap-0 p-4 xl:p-0">
-          <div className="h-[350px] sm:h-[450px] xl:h-[600px] overflow-y-auto safe-scrollbar rounded-3xl xl:rounded-none border border-[color:var(--border)] xl:border-t-0 xl:border-l-0 xl:border-b-0 xl:border-r bg-[color:var(--surface)] xl:bg-[color:var(--muted)]">
-            <div className="grid grid-cols-1 gap-3 p-4 sm:p-5">
+        <div className="flex flex-col xl:grid xl:grid-cols-[0.8fr_1.2fr] gap-3 sm:gap-4 xl:gap-0 p-3 sm:p-4 xl:p-0">
+          <div className="h-[320px] sm:h-[450px] xl:h-[600px] overflow-y-auto safe-scrollbar rounded-2xl sm:rounded-3xl xl:rounded-none border border-[color:var(--border)] xl:border-t-0 xl:border-l-0 xl:border-b-0 xl:border-r bg-[color:var(--surface)] xl:bg-[color:var(--muted)]">
+            <div className="grid grid-cols-1 gap-2.5 sm:gap-3 p-3 sm:p-5">
               {filteredRequests.map((request) => (
                 <RequestCard key={request.id} request={request} />
               ))}
             </div>
           </div>
-          <div className="h-[350px] sm:h-[450px] xl:h-[600px] bg-[color:var(--background)] relative isolate z-0 rounded-3xl xl:rounded-none overflow-hidden border border-[color:var(--border)] xl:border-0">
+          <div className="h-[300px] sm:h-[450px] xl:h-[600px] bg-[color:var(--background)] relative isolate z-0 rounded-2xl sm:rounded-3xl xl:rounded-none overflow-hidden border border-[color:var(--border)] xl:border-0">
             <>
                 <style>{`
                   .volunteer-marker-icon {
@@ -349,7 +349,7 @@ function FilterPill({ label, active, onClick }: { label: string; active: boolean
     <button
       type="button"
       onClick={onClick}
-      className={`focus-ring shrink-0 rounded-full border px-3 py-2 text-sm backdrop-blur-md transition duration-300 ${active ? "border-sky-400 bg-sky-400/20 text-sky-700 dark:text-sky-100 shadow-sm" : "border-[color:var(--border)] bg-[color:var(--surface)]/50 text-[color:var(--foreground)]/78 hover:-translate-y-0.5 hover:border-sky-400/40 hover:bg-[color:var(--surface-strong)]/60"}`}
+      className={`focus-ring shrink-0 rounded-full border px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm backdrop-blur-md transition duration-300 touch-manipulation active:scale-95 ${active ? "border-sky-400 bg-sky-400/20 text-sky-700 dark:text-sky-100 shadow-sm" : "border-[color:var(--border)] bg-[color:var(--surface)]/50 text-[color:var(--foreground)]/78 hover:-translate-y-0.5 hover:border-sky-400/40 hover:bg-[color:var(--surface-strong)]/60"}`}
     >
       {label}
     </button>

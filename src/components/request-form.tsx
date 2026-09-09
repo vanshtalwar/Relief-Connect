@@ -356,7 +356,7 @@ export function RequestForm() {
 
               {/* Location Search Bar */}
               <div ref={searchContainerRef} className="relative z-30">
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <div className="relative flex-1">
                     <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-xs">
                       {isSearchingLocation ? (
@@ -401,35 +401,37 @@ export function RequestForm() {
                     )}
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => void handleSearchLocation()}
-                    disabled={isSearchingLocation || !searchQuery.trim()}
-                    className="focus-ring px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-medium text-xs sm:text-sm transition disabled:opacity-50 shrink-0 flex items-center gap-1.5"
-                  >
-                    {isSearchingLocation ? (
-                      <>
-                        <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                        <span>Searching...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>🔍</span>
-                        <span>Search</span>
-                      </>
-                    )}
-                  </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => void handleSearchLocation()}
+                      disabled={isSearchingLocation || !searchQuery.trim()}
+                      className="focus-ring flex-1 sm:flex-initial justify-center px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-medium text-xs sm:text-sm transition disabled:opacity-50 flex items-center gap-1.5 active:scale-95 touch-manipulation"
+                    >
+                      {isSearchingLocation ? (
+                        <>
+                          <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          <span>Searching...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>🔍</span>
+                          <span>Search</span>
+                        </>
+                      )}
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={handleUseCurrentLocation}
-                    disabled={isLocating}
-                    className="focus-ring px-3 py-2 rounded-xl bg-[color:var(--surface-strong)] hover:bg-[color:var(--border)] text-[color:var(--foreground)] font-medium text-xs sm:text-sm transition border border-[color:var(--border)] shrink-0 flex items-center gap-1"
-                    title="Detect and use device GPS location"
-                  >
-                    <span>{isLocating ? "⏳" : "🎯"}</span>
-                    <span className="hidden sm:inline">{isLocating ? "Locating..." : "My GPS"}</span>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={handleUseCurrentLocation}
+                      disabled={isLocating}
+                      className="focus-ring flex-1 sm:flex-initial justify-center px-3 py-2 rounded-xl bg-[color:var(--surface-strong)] hover:bg-[color:var(--border)] text-[color:var(--foreground)] font-medium text-xs sm:text-sm transition border border-[color:var(--border)] flex items-center gap-1.5 active:scale-95 touch-manipulation"
+                      title="Detect and use device GPS location"
+                    >
+                      <span>{isLocating ? "⏳" : "🎯"}</span>
+                      <span>{isLocating ? "Locating..." : "My GPS"}</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Search Results Options List */}

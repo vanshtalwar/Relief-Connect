@@ -335,9 +335,9 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
               </div>
               <Link 
                 href={`/messages/${request.id}`}
-                className="whitespace-nowrap flex items-center justify-center gap-2 rounded-md bg-sky-500 hover:bg-sky-400 px-5 py-2.5 text-[13px] font-bold text-slate-950 transition hover:scale-[1.02] shadow-md"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl bg-sky-500 hover:bg-sky-400 px-4 py-2.5 sm:px-5 text-xs sm:text-[13px] font-bold text-slate-950 transition hover:scale-[1.02] shadow-md text-center active:scale-95 touch-manipulation"
               >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                 </svg>
                 <span>Open Group Live Chat ({request.responders.length + 1})</span>
@@ -348,7 +348,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
 
         {/* Right Column: Status timeline */}
         <div className="lg:col-span-1">
-          <section className="bg-[color:var(--muted)] border border-[color:var(--border)] rounded-xl shadow-sm overflow-hidden sticky top-6">
+          <section className="bg-[color:var(--muted)] border border-[color:var(--border)] rounded-xl shadow-sm overflow-hidden lg:sticky lg:top-24">
             <div className="border-b border-[color:var(--border)] px-5 py-4 bg-[color:var(--surface)]">
               <h3 className="text-[13px] font-medium text-[color:var(--foreground)] tracking-wide">Status Timeline</h3>
             </div>
