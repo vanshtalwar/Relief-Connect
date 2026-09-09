@@ -25,7 +25,9 @@ function MapEventsHandler({ onChange }: { onChange: (lat: number, lng: number) =
 function MapUpdater({ center }: { center: [number, number] }) {
   const map = useMap();
   useEffect(() => {
-    map.flyTo(center, map.getZoom(), { animate: true, duration: 0.5 });
+    const currentZoom = map.getZoom();
+    const targetZoom = currentZoom < 15 ? 16 : currentZoom;
+    map.flyTo(center, targetZoom, { animate: true, duration: 0.8 });
   }, [center[0], center[1], map]);
   return null;
 }

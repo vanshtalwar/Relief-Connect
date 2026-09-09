@@ -70,43 +70,69 @@ app.prepare().then(() => {
       console.log(`Socket ${socket.id} joined personal room user_${userId}`);
     });
 
+    // Handle realtime general notifications broadcast
+    socket.on("broadcast_notification", (payload) => {
+      if (payload && payload.userId) {
+        io.to(`user_${payload.userId}`).emit("new_notification", payload);
+      } else {
+        io.emit("new_notification", payload);
+      }
+    });
+
+    // Handle map/request updates broadcast
+    socket.on("broadcast_requests_update", () => {
+      socket.broadcast.emit("requests_updated");
+    });
+
     // Handle incoming messages
     socket.on("send_message", async (data, callback) => {
       try {
-        if (!data.requestId || !data.senderId || (!data.content && !data.imageUrl)) {
-          throw new Error("Missing required fields");
+        let message = data.message;
+
+        if (!message) {
+          if (!data.requestId || !data.senderId || (!data.content && !data.imageUrl)) {
+            throw new Error("Missing required fields");
+          }
+
+          // Fallback: save to database only if not already saved via REST API
+          message = await prisma.chatMessage.create({
+            data: {
+              requestId: data.requestId,
+              senderId: data.senderId,
+              content: data.content || null,
+              imageUrl: data.imageUrl || null,
+            },
+            include: {
+              sender: {
+                select: { id: true, name: true, role: true, image: true }
+              }
+            }
+          });
         }
 
-        // Save the message to the database using Prisma
-        const message = await prisma.chatMessage.create({
-          data: {
-            requestId: data.requestId,
-            senderId: data.senderId,
-            content: data.content || null,
-            imageUrl: data.imageUrl || null,
-          },
-          include: {
-            sender: {
-              select: { id: true, name: true, role: true, image: true }
-            }
-          }
-        });
-
-        // Broadcast the saved message with sender details back to the room
-        io.to(data.requestId).emit("receive_message", message);
+        // Broadcast to other participants in the room (sender already has it)
+        socket.to(data.requestId).emit("receive_message", message);
         
-        // Determine recipient for notification
+        // Determine all group recipients for real-time notification
         const request = await prisma.helpRequest.findUnique({
           where: { id: data.requestId },
-          select: { requesterId: true, assignedVolunteers: { select: { id: true } } }
+          select: {
+            requesterId: true,
+            assignedVolunteers: { select: { id: true } },
+            claims: { select: { volunteerId: true } },
+          }
         });
         
         if (request) {
-          const recipients = [];
-          if (request.requesterId !== data.senderId) recipients.push(request.requesterId);
-          
+          const recipients = new Set();
+          if (request.requesterId && request.requesterId !== data.senderId) recipients.add(request.requesterId);
           if (request.assignedVolunteers && request.assignedVolunteers.id !== data.senderId) {
-            recipients.push(request.assignedVolunteers.id);
+            recipients.add(request.assignedVolunteers.id);
+          }
+          if (Array.isArray(request.claims)) {
+            request.claims.forEach(c => {
+              if (c.volunteerId && c.volunteerId !== data.senderId) recipients.add(c.volunteerId);
+            });
           }
 
           recipients.forEach(recipientId => {

@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import io, { Socket } from "socket.io-client";
 import { useSession } from "next-auth/react";
+import { getAvatarUrl } from "@/lib/avatar";
 
 type Message = {
   id: string;
@@ -185,7 +186,7 @@ export function ChatInterface({ requestId }: { requestId: string }) {
               <div key={msg.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
                 <div className="flex items-center gap-2 mb-1.5">
                   {!isMe && msg.sender.image && (
-                    <img src={msg.sender.image} className="w-5 h-5 rounded-full object-cover" alt="" />
+                    <img src={getAvatarUrl(msg.sender.image)!} referrerPolicy="no-referrer" className="w-5 h-5 rounded-full object-cover" alt="" />
                   )}
                   <span className="text-xs font-medium text-slate-500">{isMe ? "You" : msg.sender.name}</span>
                   <span className="text-[10px] text-slate-400">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>

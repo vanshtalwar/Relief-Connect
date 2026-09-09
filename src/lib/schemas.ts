@@ -42,6 +42,8 @@ export const nearbySchema = z.object({
 
 export const claimSchema = z.object({
   note: z.string().max(500).optional(),
+  volunteerId: z.string().optional(),
+  volunteerIds: z.array(z.string()).optional(),
 });
 
 export const statusSchema = z.object({

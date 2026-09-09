@@ -7,6 +7,7 @@ import { authOptions } from "@/lib/auth";
 import Link from "next/link";
 import { SOSButton } from "@/components/sos-button";
 import { DashboardStats } from "@/components/dashboard-stats";
+import { getAvatarUrl } from "@/lib/avatar";
 
 const PlusIcon = () => (
   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -30,7 +31,31 @@ export default async function DashboardPage() {
       statusHistory: {
         orderBy: { changedAt: "asc" },
       },
-      assignedVolunteers: true,
+      assignedVolunteers: {
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          role: true,
+          latitude: true,
+          longitude: true,
+        },
+      },
+      claims: {
+        include: {
+          volunteer: {
+            select: {
+              id: true,
+              name: true,
+              image: true,
+              role: true,
+              latitude: true,
+              longitude: true,
+            },
+          },
+        },
+        orderBy: { createdAt: "asc" },
+      },
     },
     orderBy: { updatedAt: "desc" },
   });
@@ -42,29 +67,30 @@ export default async function DashboardPage() {
     LOW: 1,
   };
 
-  const requests = dbRequests.map((req) => ({
-    ...req,
-    category: req.category as "MEDICAL" | "FOOD" | "WATER" | "SHELTER" | "RESCUE" | "OTHER",
-    urgency: req.urgency as "LOW" | "MEDIUM" | "HIGH" | "CRITICAL",
-    status: req.status as "RESOLVED" | "OPEN" | "CLAIMED" | "IN_PROGRESS" | "CANCELLED",
-    photoUrl: req.photoUrl || undefined,
-    volunteerId: req.assignedVolunteers ? req.assignedVolunteers.id : undefined,
-    createdAt: req.createdAt.toISOString(),
-    updatedAt: req.updatedAt.toISOString(),
-    statusHistory: req.statusHistory.map((hist: any) => ({
-      ...hist,
-      note: hist.note || undefined,
-      changedAt: hist.changedAt.toISOString(),
-    })),
-    volunteer: req.assignedVolunteers ? {
-      id: req.assignedVolunteers.id,
-      name: req.assignedVolunteers.name,
-      image: req.assignedVolunteers.image,
-      role: req.assignedVolunteers.role,
-      latitude: req.assignedVolunteers.latitude,
-      longitude: req.assignedVolunteers.longitude,
-    } : null,
-  })).sort((a, b) => {
+  const requests = dbRequests.map((req) => {
+    const allResponders = [
+      ...(req.assignedVolunteers ? [req.assignedVolunteers] : []),
+      ...(req.claims ? req.claims.map((c) => c.volunteer) : []),
+    ].filter((v, i, self) => i === self.findIndex((t) => t.id === v.id));
+
+    return {
+      ...req,
+      category: req.category as "MEDICAL" | "FOOD" | "WATER" | "SHELTER" | "RESCUE" | "OTHER",
+      urgency: req.urgency as "LOW" | "MEDIUM" | "HIGH" | "CRITICAL",
+      status: req.status as "RESOLVED" | "OPEN" | "CLAIMED" | "IN_PROGRESS" | "CANCELLED",
+      photoUrl: req.photoUrl || undefined,
+      volunteerId: req.assignedVolunteers ? req.assignedVolunteers.id : undefined,
+      createdAt: req.createdAt.toISOString(),
+      updatedAt: req.updatedAt.toISOString(),
+      statusHistory: req.statusHistory.map((hist: any) => ({
+        ...hist,
+        note: hist.note || undefined,
+        changedAt: hist.changedAt.toISOString(),
+      })),
+      volunteer: req.assignedVolunteers || (allResponders[0] ?? null),
+      responders: allResponders,
+    };
+  }).sort((a, b) => {
     // 1. Prioritize open status
     const aIsOpen = a.status === "OPEN" ? 1 : 0;
     const bIsOpen = b.status === "OPEN" ? 1 : 0;
@@ -91,20 +117,34 @@ export default async function DashboardPage() {
           <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[#3FA37E] opacity-[0.03] rounded-full blur-[80px] translate-y-1/3 -translate-x-1/4 pointer-events-none" />
 
           <div className="relative z-10 flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-[color:var(--surface)] border border-[color:var(--border)] mb-4">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--foreground)]/70 font-medium">Operations Live</span>
+            <div className="flex items-center gap-3 sm:gap-4">
+              {session?.user?.image && (
+                <Link href="/profile" className="shrink-0 transition-transform hover:scale-105" title="View profile">
+                  <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full overflow-hidden border-2 border-[#38bdf8] shadow-md">
+                    <img
+                      src={getAvatarUrl(session.user.image)!}
+                      alt={userName}
+                      referrerPolicy="no-referrer"
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                </Link>
+              )}
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-[color:var(--surface)] border border-[color:var(--border)] mb-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--foreground)]/70 font-medium">Operations Live</span>
+                </div>
+                <h2 className="text-xl sm:text-3xl md:text-4xl font-bold tracking-tight text-[color:var(--foreground)]">
+                  Hi <Link href="/profile" className="hover:text-sky-400 transition-colors cursor-pointer decoration-sky-400/30 underline-offset-4 hover:underline">{userName}</Link> <span className="text-[color:var(--foreground)]/50 font-medium text-sm sm:text-xl md:text-2xl">({userRole})</span>
+                </h2>
               </div>
-              <h2 className="text-xl sm:text-3xl md:text-4xl font-bold tracking-tight text-[color:var(--foreground)]">
-                Hi <Link href="/profile" className="hover:text-sky-400 transition-colors cursor-pointer decoration-sky-400/30 underline-offset-4 hover:underline">{userName}</Link> <span className="text-[color:var(--foreground)]/50 font-medium text-sm sm:text-xl md:text-2xl">({userRole})</span>
-              </h2>
             </div>
 
             {/* Actions aligned to the right corner of the banner */}
             <div className="flex items-center gap-3">
-              {userRole !== "COORDINATOR" && <SOSButton />}
-              {userRole === "VICTIM" && (
+              <SOSButton />
+              {(userRole === "VICTIM" || userRole === "COORDINATOR") && (
                 <Link
                   href="/requests/new"
                   className="focus-ring flex items-center gap-2 rounded-full bg-[color:var(--foreground)] px-5 py-2 text-[12px] font-bold uppercase tracking-wider text-[color:var(--background)] transition hover:-translate-y-0.5 hover:bg-opacity-80 shadow-md"

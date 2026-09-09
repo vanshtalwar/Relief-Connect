@@ -10,6 +10,7 @@ import { OfflineIndicator } from "./offline-indicator";
 import { AuthActions } from "./auth-actions";
 import { ThemeToggle } from "./theme-toggle";
 import { useTranslation } from "./i18n-provider";
+import { getAvatarUrl } from "@/lib/avatar";
 
 const MapIcon = () => (
   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -96,7 +97,7 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
       return session?.user?.role === "COORDINATOR";
     }
     if (item.href === "/my-requests") {
-      return session?.user?.role !== "COORDINATOR";
+      return Boolean(session?.user);
     }
     return true;
   });
@@ -193,6 +194,7 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
             {session?.user && (
               <Link
                 href="/messages"
+                onClick={() => setChatNotificationCount(0)}
                 className={`relative shrink-0 flex items-center justify-center gap-1 md:gap-1.5 rounded-full px-3.5 sm:px-3 py-2 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.05em] transition-colors z-10 ${
                   pathname.startsWith("/messages")
                     ? "text-[color:var(--background)]"
@@ -206,7 +208,12 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
                   />
                 )}
-                <motion.span whileTap={{ scale: 0.8 }} transition={{ type: "spring", stiffness: 400, damping: 17 }} className="inline-block relative z-10"><ChatIcon /></motion.span>
+                <motion.div whileTap={{ scale: 0.8 }} transition={{ type: "spring", stiffness: 400, damping: 17 }} className="relative inline-block z-10">
+                  <ChatIcon />
+                  {chatNotificationCount > 0 && !pathname.startsWith("/messages") && (
+                    <span className="absolute -top-1 -right-1 flex h-2 w-2 items-center justify-center rounded-full bg-[#38bdf8] ring-2 ring-[color:var(--muted)] animate-pulse" />
+                  )}
+                </motion.div>
                 <span className="hidden md:inline-block relative z-10">Messages</span>
               </Link>
             )}
@@ -229,8 +236,8 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
                   />
                 )}
                 <motion.span whileTap={{ scale: 0.8 }} transition={{ type: "spring", stiffness: 400, damping: 17 }} className="inline-block relative z-10">
-                  {session.user.image ? (
-                    <img src={session.user.image} alt="DP" className="h-5 w-5 rounded-full object-cover" />
+                  {getAvatarUrl(session.user.image) ? (
+                    <img src={getAvatarUrl(session.user.image)!} alt="DP" referrerPolicy="no-referrer" className="h-5 w-5 rounded-full object-cover border border-[#38bdf8]/40" />
                   ) : (
                     <UserIcon />
                   )}

@@ -21,6 +21,7 @@ export function RequestCard({
     requesterId?: string;
     updatedAt: string;
     isSOS?: boolean;
+    responders?: Array<{ id: string; name: string }>;
   };
   showActions?: boolean;
 }) {
@@ -226,7 +227,17 @@ export function RequestCard({
       </div>
       <p className="hidden sm:block mt-2 sm:mt-3 line-clamp-1 sm:line-clamp-2 text-xs sm:text-sm leading-5 sm:leading-6 text-[color:var(--foreground)]/72">{request.description}</p>
       <div className="mt-3 sm:mt-4 flex items-center justify-between text-xs sm:text-sm text-[color:var(--foreground)]/70">
-        <span className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-2 py-0.5 sm:px-3 sm:py-1 text-[10px] sm:text-xs font-medium">{requestStatusLabels[request.status]}</span>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-2 py-0.5 sm:px-3 sm:py-1 text-[10px] sm:text-xs font-medium">
+            {requestStatusLabels[request.status]}
+          </span>
+          {request.responders && request.responders.length > 0 && (
+            <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 sm:px-2.5 sm:py-0.5 text-[10px] sm:text-xs font-semibold inline-flex items-center gap-1">
+              <span>👥</span>
+              <span>{request.responders.length} {request.responders.length === 1 ? "Responder" : "Responders"}</span>
+            </span>
+          )}
+        </div>
         <span className="font-medium">{formatDistance(request.distanceKm)}</span>
       </div>
 

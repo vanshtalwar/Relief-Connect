@@ -19,14 +19,20 @@ export async function GET(request: Request) {
 
     const helpRequest = await prisma.helpRequest.findUnique({
       where: { id: requestId },
-      include: { assignedVolunteers: { select: { id: true } } }
+      include: {
+        assignedVolunteers: { select: { id: true } },
+        claims: { select: { volunteerId: true } },
+      },
     });
 
     if (!helpRequest) {
       return NextResponse.json({ error: "Request not found" }, { status: 404 });
     }
 
-    const assignedIds = helpRequest.assignedVolunteers ? [helpRequest.assignedVolunteers.id] : [];
+    const assignedIds = [
+      ...(helpRequest.assignedVolunteers ? [helpRequest.assignedVolunteers.id] : []),
+      ...(helpRequest.claims ? helpRequest.claims.map((c) => c.volunteerId) : []),
+    ];
     const volunteers = await prisma.user.findMany({
       where: {
         role: "VOLUNTEER",

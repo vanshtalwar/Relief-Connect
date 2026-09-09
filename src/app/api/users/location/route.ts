@@ -26,16 +26,28 @@ export async function POST(request: Request) {
       where: { id: session.user.id },
       include: {
         claimedRequests: {
-          where: { status: { in: ["CLAIMED", "IN_PROGRESS"] } }
-        }
-      }
+          where: { status: { in: ["CLAIMED", "IN_PROGRESS"] } },
+        },
+        claims: {
+          include: {
+            request: {
+              select: { status: true },
+            },
+          },
+        },
+      },
     });
 
     if (!user?.locationConsent) {
       return NextResponse.json({ error: "Location tracking consent not granted." }, { status: 403 });
     }
 
-    if (user.claimedRequests.length === 0) {
+    const hasActiveClaimed = user.claimedRequests.length > 0;
+    const hasActiveTeamClaim = user.claims.some((c) =>
+      ["CLAIMED", "IN_PROGRESS"].includes(c.request.status)
+    );
+
+    if (!hasActiveClaimed && !hasActiveTeamClaim) {
       return NextResponse.json({ error: "No active requests. Location tracking is suspended for privacy." }, { status: 403 });
     }
 

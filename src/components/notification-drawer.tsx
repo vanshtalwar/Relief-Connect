@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { useSession } from "next-auth/react";
+import io, { Socket } from "socket.io-client";
 
 type NotificationItem = {
   id: string;
@@ -11,7 +13,7 @@ type NotificationItem = {
 
 function ParsedNotificationMessage({ message }: { message: string }) {
   // Regex for Claimed Request
-  const claimRegex = /Volunteer "(.*?)" claimed request "(.*?)". Category: (.*?), Urgency: (.*?), Requester: (.*?). Message: (.*)/;
+  const claimRegex = /Volunteer "(.*?)" (?:claimed request|joined response team for request) "(.*?)". Category: (.*?), Urgency: (.*?), Requester: (.*?). Message: (.*)/;
   const claimMatch = message.match(claimRegex);
   
   if (claimMatch) {
@@ -19,7 +21,7 @@ function ParsedNotificationMessage({ message }: { message: string }) {
     return (
       <div className="flex flex-col gap-2">
         <p className="text-[13px] text-[color:var(--foreground)] font-medium leading-snug">
-          <span className="text-[#3FA37E] font-semibold">{volunteer}</span> claimed request <span className="font-semibold">"{requestTitle}"</span>
+          <span className="text-[#3FA37E] font-semibold">{volunteer}</span> joined response team for <span className="font-semibold">"{requestTitle}"</span>
         </p>
         <div className="flex flex-wrap gap-1.5 mt-0.5">
           <span className="px-1.5 py-0.5 bg-[color:var(--surface-strong)] text-[10px] uppercase tracking-wider font-bold text-[color:var(--foreground)]/70 rounded">
@@ -56,35 +58,79 @@ function ParsedNotificationMessage({ message }: { message: string }) {
 }
 
 export function NotificationDrawer() {
+  const { data: session } = useSession();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const limit = 5;
+  const socketRef = useRef<Socket | null>(null);
+
+  const loadNotifications = useCallback(async (showLoadingSpinner = false) => {
+    if (showLoadingSpinner) setLoading(true);
+    setIsRefreshing(true);
+    try {
+      const res = await fetch(`/api/notifications?page=${page}&limit=${limit}`);
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data.notifications || []);
+        setTotalPages(data.totalPages || 1);
+      }
+    } catch (err) {
+      console.error("Error loading notifications:", err);
+    } finally {
+      if (showLoadingSpinner) setLoading(false);
+      setIsRefreshing(false);
+    }
+  }, [page, limit]);
 
   useEffect(() => {
-    async function loadNotifications() {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/notifications?page=${page}&limit=${limit}`);
-        if (res.ok) {
-          const data = await res.json();
-          setNotifications(data.notifications || []);
-          setTotalPages(data.totalPages || 1);
-        }
-      } catch (err) {
-        console.error("Error loading notifications:", err);
-      } finally {
-        setLoading(false);
+    void loadNotifications(true);
+  }, [loadNotifications]);
+
+  // Setup real-time Socket.IO sync and resilient interval
+  useEffect(() => {
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || (typeof window !== "undefined" ? window.location.origin : "");
+    const socket = io(socketUrl, {
+      transports: ["websocket", "polling"],
+      reconnectionAttempts: 5,
+    });
+    socketRef.current = socket;
+
+    socket.on("connect", () => {
+      if (session?.user?.id) {
+        socket.emit("join_user_room", session.user.id);
       }
-    }
-    void loadNotifications();
-  }, [page]);
+    });
+
+    socket.on("new_notification", () => {
+      void loadNotifications(false);
+    });
+
+    socket.on("new_chat_notification", () => {
+      void loadNotifications(false);
+    });
+
+    socket.on("requests_updated", () => {
+      void loadNotifications(false);
+    });
+
+    // Fallback periodic refresh every 6 seconds to ensure live consistency
+    const interval = setInterval(() => {
+      void loadNotifications(false);
+    }, 6000);
+
+    return () => {
+      clearInterval(interval);
+      socket.disconnect();
+    };
+  }, [session?.user?.id, loadNotifications]);
 
   const getDetailedMessage = (message: string) => {
-    if (message.includes("claimed")) {
-      return "A verified local responder claimed the request. They are currently gathering resources and heading to the marked coordinates.";
+    if (message.includes("claimed") || message.includes("response team")) {
+      return "A verified responder has joined the response team. They are coordinating resources and heading to the marked coordinates.";
     }
     if (message.includes("critical")) {
       return "Two urgent alerts have been flagged within a 1km radius of your current location. Please review the Map Dashboard to coordinate support.";
@@ -122,9 +168,30 @@ export function NotificationDrawer() {
   return (
     <div className="flex flex-col bg-[color:var(--muted)] border border-[color:var(--border)] rounded-xl overflow-hidden h-full max-h-[600px] shadow-sm">
       <div className="border-b border-[color:var(--border)] px-4 py-3 bg-[color:var(--surface)] flex items-center justify-between">
-        <h2 className="text-[13px] font-medium text-[color:var(--foreground)] tracking-wide">Activity Log</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-[13px] font-medium text-[color:var(--foreground)] tracking-wide">Activity Log</h2>
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Live Sync
+          </span>
+        </div>
         <div className="flex items-center gap-2.5">
-          {loading && <span className="text-[9px] text-[color:var(--foreground)]/50 uppercase tracking-widest font-medium">Syncing</span>}
+          <button
+            onClick={() => void loadNotifications(false)}
+            disabled={isRefreshing}
+            title="Refresh notifications"
+            className="p-1 rounded-md text-[color:var(--foreground)]/60 hover:text-[color:var(--foreground)] hover:bg-[color:var(--surface-strong)] transition-all disabled:opacity-50"
+          >
+            <svg
+              className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-sky-400" : ""}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
           <div className="relative flex h-2 w-2 items-center justify-center">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#3FA37E] opacity-30 duration-1000"></span>
             <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#3FA37E]"></span>

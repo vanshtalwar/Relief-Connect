@@ -5,6 +5,7 @@ import { AppShell } from "@/components/app-shell";
 import { useSession, signOut } from "next-auth/react";
 import { useTranslation } from "@/components/i18n-provider";
 import type { Language } from "@/lib/i18n/dictionaries";
+import { getAvatarUrl } from "@/lib/avatar";
 
 const VerifiedBadge = () => (
   <div className="relative flex items-center justify-center group">
@@ -31,6 +32,7 @@ export default function ProfilePage() {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [avatarLoadError, setAvatarLoadError] = useState(false);
 
   const [inventory, setInventory] = useState<string>("");
   const [isUpdatingInventory, setIsUpdatingInventory] = useState(false);
@@ -220,13 +222,42 @@ export default function ProfilePage() {
 
   const { language, setLanguage } = useTranslation();
 
+  const rawAvatar = profileData?.user?.image || session?.user?.image;
+  const avatarUrl = !avatarLoadError ? getAvatarUrl(rawAvatar) : null;
+
   return (
     <AppShell title="Profile" subtitle="Your role, identity, and session controls in one place.">
       <section className={`grid gap-6 ${session?.user?.role === "VOLUNTEER" ? "lg:grid-cols-3" : "lg:grid-cols-2"}`}>
         <div className="order-2 lg:order-1 bg-[color:var(--muted)] border border-[color:var(--border)] shadow-sm rounded-2xl p-6 flex flex-col justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-[color:var(--foreground)]">Account details</h2>
-            <dl className="mt-5 space-y-4 text-sm">
+            <div className="flex items-center gap-4 pb-4 mb-4 border-b border-[color:var(--border)]">
+              <div className="relative h-14 w-14 rounded-full overflow-hidden border-2 border-[#38bdf8]/40 bg-[color:var(--surface)] shrink-0 shadow-sm flex items-center justify-center">
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt="Profile"
+                    referrerPolicy="no-referrer"
+                    onError={() => setAvatarLoadError(true)}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="text-2xl">👤</span>
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <h3 className="font-bold text-base text-[color:var(--foreground)] truncate">{session?.user?.name || "User"}</h3>
+                  {status === "authenticated" && <VerifiedBadge />}
+                </div>
+                <p className="text-xs text-[color:var(--foreground)]/60 truncate">{session?.user?.email}</p>
+                <span className="inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 mt-1 rounded bg-[color:var(--surface-strong)] text-[#38bdf8] border border-[color:var(--border)]">
+                  {session?.user?.role || "USER"}
+                </span>
+              </div>
+            </div>
+
+            <h2 className="text-sm font-bold uppercase tracking-wider text-[color:var(--foreground)]/70">Account details</h2>
+            <dl className="mt-3 space-y-4 text-sm">
               <Row
                 label="Name"
                 value={
@@ -396,11 +427,13 @@ export default function ProfilePage() {
             </p>
 
             <div className="mt-8 flex flex-col items-center gap-6">
-              <div className="relative h-32 w-32 overflow-hidden rounded-full border-[3px] border-[#38bdf8]/30 bg-[color:var(--surface)] shadow-lg flex items-center justify-center">
-                {session?.user?.image ? (
+              <div className="relative h-32 w-32 overflow-hidden rounded-full border-[3px] border-[#38bdf8]/40 bg-[color:var(--surface)] shadow-lg flex items-center justify-center">
+                {avatarUrl ? (
                   <img
-                    src={session.user.image}
+                    src={avatarUrl}
                     alt="Profile Avatar"
+                    referrerPolicy="no-referrer"
+                    onError={() => setAvatarLoadError(true)}
                     className="h-full w-full object-cover"
                   />
                 ) : (

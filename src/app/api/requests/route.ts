@@ -33,13 +33,58 @@ export async function GET(request: Request) {
           }
         } : {}),
       },
+      include: {
+        statusHistory: {
+          orderBy: { changedAt: "asc" },
+        },
+        assignedVolunteers: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+            role: true,
+            latitude: true,
+            longitude: true,
+            isVerified: true,
+          },
+        },
+        claims: {
+          include: {
+            volunteer: {
+              select: {
+                id: true,
+                name: true,
+                image: true,
+                role: true,
+                latitude: true,
+                longitude: true,
+                isVerified: true,
+              },
+            },
+          },
+          orderBy: { createdAt: "asc" },
+        },
+      },
       take: 500, // Limit maximum records fetched to prevent payload explosion
       orderBy: { updatedAt: "desc" },
+    });
+
+    const formattedRequests = requests.map((req) => {
+      const allResponders = [
+        ...(req.assignedVolunteers ? [req.assignedVolunteers] : []),
+        ...(req.claims ? req.claims.map((c) => c.volunteer) : []),
+      ].filter((v, i, self) => i === self.findIndex((t) => t.id === v.id));
+
+      return {
+        ...req,
+        volunteer: req.assignedVolunteers || (allResponders[0] ?? null),
+        responders: allResponders,
+      };
     });
     
     // Add caching headers for performance
     return NextResponse.json(
-      { requests },
+      { requests: formattedRequests },
       {
         headers: {
           "Cache-Control": "s-maxage=5, stale-while-revalidate=30", // Cache for 5s, serve stale while revalidating
@@ -121,15 +166,47 @@ export async function POST(request: Request) {
       }
     }
 
-    // Ensure clientUuid is unique to prevent database constraint violation
-    let clientUuid = parsed.data.clientUuid;
-    const existingReq = await prisma.helpRequest.findUnique({
-      where: { clientUuid },
-      select: { id: true },
-    });
-    if (existingReq) {
-      clientUuid = crypto.randomUUID();
+    // 1. Check clientUuid idempotency: if request with clientUuid already exists, return it
+    if (parsed.data.clientUuid) {
+      const existingReq = await prisma.helpRequest.findUnique({
+        where: { clientUuid: parsed.data.clientUuid },
+        include: { statusHistory: true },
+      });
+      if (existingReq) {
+        console.log(`[POST /api/requests] Idempotent hit for clientUuid ${parsed.data.clientUuid}. Returning existing request ${existingReq.id}`);
+        return NextResponse.json({ request: existingReq }, { status: 200 });
+      }
     }
+
+    // 2. Near-duplicate deduplication: prevent accidental rapid double-submissions from the same user
+    const recentDuplicate = await prisma.helpRequest.findFirst({
+      where: {
+        requesterId,
+        title: parsed.data.title.trim(),
+        category: parsed.data.category,
+        createdAt: {
+          gte: new Date(Date.now() - 60 * 1000), // Within 60 seconds
+        },
+      },
+      include: {
+        statusHistory: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (recentDuplicate) {
+      const latDiff = Math.abs(recentDuplicate.latitude - parsed.data.latitude);
+      const lngDiff = Math.abs(recentDuplicate.longitude - parsed.data.longitude);
+      const isSameLocation = latDiff < 0.005 && lngDiff < 0.005;
+      const isSameDesc = recentDuplicate.description.trim().toLowerCase() === parsed.data.description.trim().toLowerCase();
+
+      if (isSameLocation || isSameDesc) {
+        console.warn(`[POST /api/requests] Duplicate submission detected for requester ${requesterId} within 60s window. Returning existing request ${recentDuplicate.id}`);
+        return NextResponse.json({ request: recentDuplicate }, { status: 200 });
+      }
+    }
+
+    const clientUuid = parsed.data.clientUuid || crypto.randomUUID();
 
     const created = await prisma.helpRequest.create({
       data: {

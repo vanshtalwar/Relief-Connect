@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useForm, useWatch } from "react-hook-form";
@@ -33,6 +33,137 @@ export function RequestForm() {
         });
 
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<{ displayName: string; lat: number; lng: number }[]>([]);
+  const [isSearchingLocation, setIsSearchingLocation] = useState(false);
+  const [showResultsDropdown, setShowResultsDropdown] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setShowResultsDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSelectSearchResult = (
+    result: { displayName: string; lat: number; lng: number },
+    closeOptions = true
+  ) => {
+    // If the user entered a specific unit / flat / house number prefix, preserve it in the address
+    let finalLocationName = result.displayName;
+    const trimmedInput = searchQuery.trim();
+    const houseMatch = trimmedInput.match(
+      /^(flat\s*#?[a-z0-9\-\/]+|house\s*(?:no\.?|number)?\s*#?[a-z0-9\-\/]+|h\.?no\.?\s*#?[a-z0-9\-\/]+|bldg\s*[a-z0-9\-\/]+|[a-z0-9]{1,4}[\-\/][a-z0-9]{1,4})\b/i
+    );
+
+    if (houseMatch && !result.displayName.toLowerCase().includes(houseMatch[0].toLowerCase())) {
+      finalLocationName = `${houseMatch[0].trim()}, ${result.displayName}`;
+    }
+
+    // Direct redirect / move map immediately to this coordinate:
+    form.setValue("latitude", result.lat, { shouldValidate: true, shouldDirty: true });
+    form.setValue("longitude", result.lng, { shouldValidate: true, shouldDirty: true });
+    form.setValue("locationName", finalLocationName, { shouldValidate: true, shouldDirty: true });
+
+    if (closeOptions) {
+      setShowResultsDropdown(false);
+      setSearchQuery(finalLocationName);
+    }
+    setSearchError(null);
+  };
+
+  const handleSearchLocation = async (
+    queryToSearch?: string | React.FormEvent,
+    autoFlyToFirst = true
+  ) => {
+    let query = typeof queryToSearch === "string" ? queryToSearch : searchQuery.trim();
+    if (typeof queryToSearch !== "string" && queryToSearch?.preventDefault) {
+      queryToSearch.preventDefault();
+    }
+    if (!query || query.trim().length === 0) return;
+
+    setIsSearchingLocation(true);
+    setSearchError(null);
+    try {
+      const res = await fetch(`/api/geocode?q=${encodeURIComponent(query.trim())}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.results && data.results.length > 0) {
+          setSearchResults(data.results);
+          setShowResultsDropdown(true);
+
+          // Direct redirect: immediately fly map to the top candidate!
+          if (autoFlyToFirst) {
+            handleSelectSearchResult(data.results[0], false);
+          }
+        } else {
+          setSearchResults([]);
+          setSearchError("No locations found for this query. Try another address, city, or landmark.");
+        }
+      } else {
+        setSearchError("Location search failed. Please try again.");
+      }
+    } catch {
+      setSearchError("Network error while searching location.");
+    } finally {
+      setIsSearchingLocation(false);
+    }
+  };
+
+  // Debounced auto-search as user types (400ms debounce)
+  useEffect(() => {
+    const trimmed = searchQuery.trim();
+    if (trimmed.length < 2) {
+      setSearchResults([]);
+      setSearchError(null);
+      return;
+    }
+
+    // Don't auto-search if query matches the already selected locationName
+    if (trimmed === form.getValues("locationName")?.trim()) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      // For debounced typing, fetch options and fly to first match
+      void handleSearchLocation(trimmed, true);
+    }, 450);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const handleUseCurrentLocation = () => {
+    if (typeof window === "undefined" || !("geolocation" in navigator)) {
+      alert("Geolocation is not supported by your browser.");
+      return;
+    }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        form.setValue("latitude", latitude, { shouldValidate: true, shouldDirty: true });
+        form.setValue("longitude", longitude, { shouldValidate: true, shouldDirty: true });
+        await reverseGeocode(latitude, longitude);
+        setSearchResults([]);
+        setShowResultsDropdown(false);
+        setIsLocating(false);
+      },
+      (err) => {
+        console.warn("Geolocation error:", err);
+        alert("Could not access your location. Please check browser location permissions or enter an address in the search bar.");
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+    );
+  };
 
   const form = useForm<RequestInput>({
     resolver: zodResolver(requestSchema),
@@ -97,9 +228,14 @@ export function RequestForm() {
     }
   }, []);
 
+  const isSubmittingRef = useRef(false);
   const stepCount = 4;
 
   async function onSubmit(data: RequestInput) {
+    if (isSubmittingRef.current || isSubmitting) {
+      return;
+    }
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     setSubmitError(null);
 
@@ -111,10 +247,11 @@ export function RequestForm() {
         return;
       }
 
-      // Ensure fresh UUID on each submission attempt
+      // Retain stable UUID for this submission session for idempotency
+      const formClientUuid = form.getValues("clientUuid") || data.clientUuid || getSafeUuid();
       const submissionData = {
         ...data,
-        clientUuid: getSafeUuid(),
+        clientUuid: formClientUuid,
       };
 
       const response = await fetch("/api/requests", {
@@ -133,9 +270,12 @@ export function RequestForm() {
               payload?.message ??
               "We could not submit the request. Please try again.";
         setSubmitError(errorMsg);
+        isSubmittingRef.current = false;
+        setIsSubmitting(false);
         return;
       }
 
+      // Submission succeeded: keep isSubmitting=true and lock locked so user cannot re-click while navigating
       if (payload?.request?.id) {
         window.location.href = `/requests/${payload.request.id}`;
       } else {
@@ -144,7 +284,7 @@ export function RequestForm() {
     } catch (err: any) {
       console.error("Submission error:", err);
       setSubmitError(err?.message || "We could not submit the request. Please check your connection and try again.");
-    } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   }
@@ -206,22 +346,202 @@ export function RequestForm() {
                 </select>
               </Field>
             </div>
-            <div className="space-y-2">
-              <span className="text-sm font-medium text-slate-800 dark:text-slate-100 block">Select exact location on map</span>
-                <div className="h-64 w-full relative">
-                  <LocationPickerMap
-                    latitude={values.latitude}
-                    longitude={values.longitude}
-                    onChange={async (lat, lng) => {
-                      form.setValue("latitude", lat);
-                      form.setValue("longitude", lng);
-                      await reverseGeocode(lat, lng);
-                    }}
-                  />
+            <div className="space-y-3">
+              <div>
+                <span className="text-sm font-medium text-slate-800 dark:text-slate-100 block">Incident or Relief Location</span>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Making a request for someone else? Search their address, neighborhood, or landmark below.
+                </p>
+              </div>
+
+              {/* Location Search Bar */}
+              <div ref={searchContainerRef} className="relative z-30">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-xs">
+                      {isSearchingLocation ? (
+                        <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-sky-500 border-t-transparent" />
+                      ) : (
+                        "📍"
+                      )}
+                    </span>
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        if (searchError) setSearchError(null);
+                        setShowResultsDropdown(true);
+                      }}
+                      onFocus={() => {
+                        if (searchResults.length > 0) setShowResultsDropdown(true);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          void handleSearchLocation();
+                        }
+                      }}
+                      placeholder="Search address, city, landmark, or coordinates (e.g. Bandra, Mumbai)..."
+                      className="input w-full pl-8 pr-8 text-xs sm:text-sm py-2.5"
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchQuery("");
+                          setSearchResults([]);
+                          setShowResultsDropdown(false);
+                          setSearchError(null);
+                        }}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => void handleSearchLocation()}
+                    disabled={isSearchingLocation || !searchQuery.trim()}
+                    className="focus-ring px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-medium text-xs sm:text-sm transition disabled:opacity-50 shrink-0 flex items-center gap-1.5"
+                  >
+                    {isSearchingLocation ? (
+                      <>
+                        <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        <span>Searching...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>🔍</span>
+                        <span>Search</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleUseCurrentLocation}
+                    disabled={isLocating}
+                    className="focus-ring px-3 py-2 rounded-xl bg-[color:var(--surface-strong)] hover:bg-[color:var(--border)] text-[color:var(--foreground)] font-medium text-xs sm:text-sm transition border border-[color:var(--border)] shrink-0 flex items-center gap-1"
+                    title="Detect and use device GPS location"
+                  >
+                    <span>{isLocating ? "⏳" : "🎯"}</span>
+                    <span className="hidden sm:inline">{isLocating ? "Locating..." : "My GPS"}</span>
+                  </button>
                 </div>
+
+                {/* Search Results Options List */}
+                {showResultsDropdown && searchResults.length > 0 && (
+                  <div className="mt-2.5 rounded-2xl border-2 border-sky-400/40 bg-[color:var(--surface-strong)] p-3 space-y-2.5 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="flex items-center justify-between pb-1 border-b border-[color:var(--border)]">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="text-xs font-bold text-[color:var(--foreground)]">
+                          Address Options ({searchResults.length} found):
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowResultsDropdown(false)}
+                        className="text-[11px] font-semibold text-slate-400 hover:text-slate-200 px-2 py-0.5 rounded-md hover:bg-[color:var(--surface)] transition-colors"
+                      >
+                        ✕ Close Options
+                      </button>
+                    </div>
+
+                    <div className="max-h-56 overflow-y-auto space-y-2 pr-1 safe-scrollbar">
+                      {searchResults.map((item, idx) => {
+                        const isCurrentlyActive =
+                          Math.abs(values.latitude - item.lat) < 0.0002 &&
+                          Math.abs(values.longitude - item.lng) < 0.0002;
+
+                        return (
+                          <div
+                            key={idx}
+                            onClick={() => handleSelectSearchResult(item, false)}
+                            className={`w-full p-2.5 rounded-xl border transition-all flex items-center justify-between gap-3 text-xs cursor-pointer ${
+                              isCurrentlyActive
+                                ? "bg-sky-500/15 border-sky-400 ring-1 ring-sky-400/40 shadow-sm"
+                                : "bg-[color:var(--surface)] border-[color:var(--border)] hover:border-sky-400/50 hover:bg-[color:var(--surface-strong)]"
+                            }`}
+                          >
+                            <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                              <span className="text-sky-500 mt-0.5 shrink-0 text-base">📍</span>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <p className="font-bold text-[color:var(--foreground)] truncate text-xs sm:text-sm">
+                                    {item.displayName.split(",")[0]}
+                                  </p>
+                                  {isCurrentlyActive && (
+                                    <span className="shrink-0 text-[10px] font-extrabold px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                      ✓ Active on Map
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-[11px] text-[color:var(--foreground)]/70 truncate mt-0.5">
+                                  {item.displayName}
+                                </p>
+                                <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">
+                                  GPS: {item.lat.toFixed(5)}, {item.lng.toFixed(5)}
+                                </span>
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSelectSearchResult(item, false);
+                              }}
+                              className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 ${
+                                isCurrentlyActive
+                                  ? "bg-emerald-500 text-white shadow-sm"
+                                  : "bg-sky-500 hover:bg-sky-400 text-white shadow-sm"
+                              }`}
+                            >
+                              {isCurrentlyActive ? "Selected ✓" : "Move Map →"}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {searchError && (
+                  <p className="text-xs text-amber-500 mt-1.5">{searchError}</p>
+                )}
+              </div>
+
+              {/* Map Picker */}
+              <div className="h-64 w-full relative">
+                <LocationPickerMap
+                  latitude={values.latitude}
+                  longitude={values.longitude}
+                  onChange={async (lat, lng) => {
+                    form.setValue("latitude", lat, { shouldValidate: true, shouldDirty: true });
+                    form.setValue("longitude", lng, { shouldValidate: true, shouldDirty: true });
+                    await reverseGeocode(lat, lng);
+                  }}
+                />
+              </div>
+
               {values.locationName && (
-                <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-3 text-xs leading-relaxed text-slate-700 dark:text-slate-350">
-                  <strong>Exact Location Name:</strong> {values.locationName}
+                <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-3.5 text-xs leading-relaxed text-slate-700 dark:text-slate-350 flex items-start gap-2.5">
+                  <span className="text-sky-500 mt-0.5 shrink-0 text-base">📌</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-slate-800 dark:text-slate-100">
+                      Selected Location:
+                    </p>
+                    <p className="text-slate-600 dark:text-slate-300 mt-0.5 break-words">
+                      {values.locationName}
+                    </p>
+                    <p className="text-[10px] text-slate-400 mt-1 font-mono">
+                      GPS: {values.latitude.toFixed(5)}, {values.longitude.toFixed(5)} • Drag marker on map anytime to fine-tune exact building
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
@@ -324,8 +644,13 @@ export function RequestForm() {
             {isUploadingPhoto ? "Uploading Photo..." : t.common.next}
           </button>
         ) : (
-          <button type="submit" className="focus-ring rounded-full bg-emerald-400 px-5 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50" disabled={isSubmitting || isUploadingPhoto}>
-            {isSubmitting ? t.common.loading : isUploadingPhoto ? "Uploading Photo..." : t.common.submit}
+          <button type="submit" className="focus-ring flex items-center gap-2 rounded-full bg-emerald-400 px-6 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50" disabled={isSubmitting || isUploadingPhoto}>
+            {isSubmitting ? (
+              <>
+                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-slate-950 border-t-transparent" />
+                <span>Submitting &amp; Opening...</span>
+              </>
+            ) : isUploadingPhoto ? "Uploading Photo..." : t.common.submit}
           </button>
         )}
       </div>

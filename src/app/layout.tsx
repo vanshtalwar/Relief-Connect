@@ -15,6 +15,7 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
+  referrer: "no-referrer",
   title: {
     template: "%s | ReliefConnect",
     default: "ReliefConnect | Hyperlocal Disaster Response",
@@ -24,7 +25,6 @@ export const metadata: Metadata = {
   keywords: ["disaster response", "emergency", "volunteer", "relief connect", "SOS", "crisis coordination"],
   openGraph: {
     title: "ReliefConnect | Hyperlocal Disaster Response",
-    description: "Real-time disaster coordination and emergency rescue mapping for victims and volunteers.",
     siteName: "ReliefConnect",
     type: "website",
   },
@@ -52,6 +52,9 @@ export default function RootLayout({
       data-theme="light"
       className={`${inter.variable} ${robotoMono.variable} h-full antialiased`}
     >
+      <head>
+        <meta name="referrer" content="no-referrer" />
+      </head>
       <body className="min-h-full flex flex-col bg-[color:var(--background)] text-[color:var(--foreground)] transition-colors duration-300">
         <Providers>{children}</Providers>
       </body>

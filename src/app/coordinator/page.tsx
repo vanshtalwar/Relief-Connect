@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -44,7 +45,7 @@ export default async function CoordinatorPage() {
       <div className="flex flex-col gap-5">
         <div>
           <h1 className="text-2xl font-bold text-[color:var(--foreground)] tracking-tight">Coordinator Dashboard</h1>
-          <p className="text-sm text-[color:var(--foreground)]/60 mt-1">Manage operations and monitor ongoing response efforts.</p>
+          <p className="text-sm text-[color:var(--foreground)]/60 mt-1">Manage operations, monitor verification queues, and coordinate response efforts.</p>
         </div>
         
         <AnalyticsDashboard summary={summary} />

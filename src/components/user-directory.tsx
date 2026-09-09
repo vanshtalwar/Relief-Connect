@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
+import { getAvatarUrl } from "@/lib/avatar";
 
 export function UserDirectory({ users }: { users: any[] }) {
   const [currentPage, setCurrentPage] = useState(1);
@@ -28,21 +30,24 @@ export function UserDirectory({ users }: { users: any[] }) {
               <th className="pb-3 pr-4 font-semibold">Email</th>
               <th className="pb-3 pr-4 font-semibold">Role</th>
               <th className="pb-3 pr-4 font-semibold">Verified</th>
-              <th className="pb-3 font-semibold text-right">Joined</th>
+              <th className="pb-3 pr-4 font-semibold">Joined</th>
+              <th className="pb-3 font-semibold text-right">Profile</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[color:var(--border)]">
             {paginatedUsers.map((user) => (
               <tr key={user.id} className="hover:bg-[color:var(--surface)]/50 transition-colors">
-                <td className="py-3 pr-4 font-medium text-[color:var(--foreground)] flex items-center gap-2">
-                  {user.image ? (
-                    <img src={user.image} alt={user.name} className="h-6 w-6 rounded-full object-cover" />
-                  ) : (
-                    <div className="h-6 w-6 rounded-full bg-[color:var(--border)] flex items-center justify-center text-[10px] text-[color:var(--foreground)]/50">
-                      {user.name.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  {user.name}
+                <td className="py-3 pr-4 font-medium text-[color:var(--foreground)]">
+                  <Link href={`/profile/${user.id}`} className="flex items-center gap-2 group hover:text-sky-400 transition-colors">
+                    {user.image ? (
+                      <img src={getAvatarUrl(user.image)!} alt={user.name} referrerPolicy="no-referrer" className="h-6 w-6 rounded-full object-cover group-hover:ring-2 group-hover:ring-sky-400 transition-all" />
+                    ) : (
+                      <div className="h-6 w-6 rounded-full bg-[color:var(--border)] flex items-center justify-center text-[10px] text-[color:var(--foreground)]/50 group-hover:bg-sky-500/20 group-hover:text-sky-400 transition-colors">
+                        {user.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <span className="group-hover:underline">{user.name}</span>
+                  </Link>
                 </td>
                 <td className="py-3 pr-4">{user.email}</td>
                 <td className="py-3 pr-4">
@@ -64,14 +69,23 @@ export function UserDirectory({ users }: { users: any[] }) {
                     <span className="text-[color:var(--foreground)]/40 text-xs">No</span>
                   )}
                 </td>
-                <td className="py-3 text-right tabular-nums text-[color:var(--foreground)]/50 text-xs">
+                <td className="py-3 pr-4 tabular-nums text-[color:var(--foreground)]/50 text-xs">
                   {new Date(user.createdAt).toLocaleDateString()}
+                </td>
+                <td className="py-3 text-right">
+                  <Link
+                    href={`/profile/${user.id}`}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/20 transition-all hover:scale-[1.02]"
+                  >
+                    <span>View Profile</span>
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
+                  </Link>
                 </td>
               </tr>
             ))}
             {paginatedUsers.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-8 text-center text-[color:var(--foreground)]/40">No users found.</td>
+                <td colSpan={6} className="py-8 text-center text-[color:var(--foreground)]/40">No users found.</td>
               </tr>
             )}
           </tbody>
@@ -83,19 +97,25 @@ export function UserDirectory({ users }: { users: any[] }) {
         {paginatedUsers.map((user) => (
           <div key={user.id} className="p-4 hover:bg-[color:var(--surface)]/50 transition-colors flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+              <Link href={`/profile/${user.id}`} className="flex items-center gap-3 group">
                 {user.image ? (
-                  <img src={user.image} alt={user.name} className="h-8 w-8 rounded-full object-cover shadow-sm border border-[color:var(--border)]" />
+                  <img src={getAvatarUrl(user.image)!} alt={user.name} referrerPolicy="no-referrer" className="h-8 w-8 rounded-full object-cover shadow-sm border border-[color:var(--border)] group-hover:ring-2 group-hover:ring-sky-400 transition-all" />
                 ) : (
-                  <div className="h-8 w-8 rounded-full bg-[color:var(--border)] flex items-center justify-center text-[12px] text-[color:var(--foreground)]/50 font-bold shadow-sm">
+                  <div className="h-8 w-8 rounded-full bg-[color:var(--border)] flex items-center justify-center text-[12px] text-[color:var(--foreground)]/50 font-bold shadow-sm group-hover:text-sky-400">
                     {user.name.charAt(0).toUpperCase()}
                   </div>
                 )}
                 <div>
-                  <div className="font-semibold text-[14px] text-[color:var(--foreground)]">{user.name}</div>
+                  <div className="font-semibold text-[14px] text-[color:var(--foreground)] group-hover:text-sky-400 group-hover:underline transition-colors">{user.name}</div>
                   <div className="text-[12px] text-[color:var(--foreground)]/60 mt-0.5">{user.email}</div>
                 </div>
-              </div>
+              </Link>
+              <Link
+                href={`/profile/${user.id}`}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20 shrink-0"
+              >
+                <span>Profile →</span>
+              </Link>
             </div>
             
             <div className="flex items-center justify-between text-[12px] bg-[color:var(--surface)]/50 p-2.5 rounded-lg border border-[color:var(--border)] mt-1">

@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState, useRef, use } from "react";
+import { useEffect, useState, useRef, use, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { io, Socket } from "socket.io-client";
 import { format } from "date-fns";
 import Link from "next/link";
 import useSWR from "swr";
+import { getAvatarUrl } from "@/lib/avatar";
 
 type Message = {
   id: string;
@@ -23,6 +24,15 @@ type Message = {
   };
 };
 
+type MemberInfo = {
+  id: string;
+  name: string;
+  image: string | null;
+  role: string;
+  isVerified?: boolean;
+  createdAt?: string;
+};
+
 type RequestDetails = {
   id: string;
   title: string;
@@ -30,8 +40,9 @@ type RequestDetails = {
   urgency: string;
   status: string;
   requesterId: string;
-  requester: { id: string; name: string; image: string | null; role: string };
-  assignedVolunteers: { id: string; name: string; image: string | null; role: string } | null;
+  requester: MemberInfo;
+  assignedVolunteers: MemberInfo | null;
+  claims?: { id: string; volunteer: MemberInfo; createdAt?: string }[];
 };
 
 const fetcher = (url: string) => fetch(url).then((res) => {
@@ -46,6 +57,7 @@ export default function ChatRoomPage({ params }: { params: Promise<{ requestId: 
   const { data: session } = useSession();
   const [messages, setMessages] = useState<Message[]>([]);
   const [requestDetails, setRequestDetails] = useState<RequestDetails | null>(null);
+  const [showMembersModal, setShowMembersModal] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
@@ -55,6 +67,89 @@ export default function ChatRoomPage({ params }: { params: Promise<{ requestId: 
   const [socket, setSocket] = useState<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Compute distinct group members (requester, assigned volunteer, claims, coordinators, active senders)
+  const groupMembers = useMemo(() => {
+    const membersMap = new Map<string, MemberInfo & { tag?: string }>();
+
+    if (requestDetails?.requester) {
+      membersMap.set(requestDetails.requester.id, {
+        ...requestDetails.requester,
+        tag: "Requester",
+      });
+    }
+
+    if (requestDetails?.assignedVolunteers) {
+      membersMap.set(requestDetails.assignedVolunteers.id, {
+        ...requestDetails.assignedVolunteers,
+        tag: membersMap.has(requestDetails.assignedVolunteers.id) ? "Requester" : "Assigned Volunteer",
+      });
+    }
+
+    if (Array.isArray(requestDetails?.claims)) {
+      requestDetails.claims.forEach((c) => {
+        if (c.volunteer) {
+          const existing = membersMap.get(c.volunteer.id);
+          membersMap.set(c.volunteer.id, {
+            ...c.volunteer,
+            tag: existing ? existing.tag : "Volunteer",
+          });
+        }
+      });
+    }
+
+    // Include current session user so their profile and avatar are always represented
+    if (session?.user?.id) {
+      const existing = membersMap.get(session.user.id);
+      if (!existing) {
+        membersMap.set(session.user.id, {
+          id: session.user.id,
+          name: session.user.name || "You",
+          image: session.user.image || null,
+          role: session.user.role || "USER",
+          tag: session.user.role === "COORDINATOR" ? "Coordinator" : session.user.role,
+        });
+      } else if (!existing.image && session.user.image) {
+        membersMap.set(session.user.id, {
+          ...existing,
+          image: session.user.image,
+        });
+      }
+    }
+
+    // Include any sender from chat messages
+    messages.forEach((m) => {
+      if (m.sender) {
+        const existing = membersMap.get(m.sender.id);
+        if (!existing) {
+          membersMap.set(m.sender.id, {
+            id: m.sender.id,
+            name: m.sender.name,
+            image: m.sender.image,
+            role: m.sender.role,
+            tag: m.sender.role === "COORDINATOR" ? "Coordinator" : m.sender.role,
+          });
+        } else if (!existing.image && m.sender.image) {
+          membersMap.set(m.sender.id, {
+            ...existing,
+            image: m.sender.image,
+          });
+        }
+      }
+    });
+
+    return Array.from(membersMap.values());
+  }, [requestDetails, session, messages]);
+
+  // Strictly unique messages to prevent duplicate keys in React render
+  const uniqueMessages = useMemo(() => {
+    const seen = new Set<string>();
+    return messages.filter((m) => {
+      if (seen.has(m.id)) return false;
+      seen.add(m.id);
+      return true;
+    });
+  }, [messages]);
 
   // Scroll to bottom
   const scrollToBottom = () => {
@@ -94,7 +189,15 @@ export default function ChatRoomPage({ params }: { params: Promise<{ requestId: 
           // If previous messages have temp optimistic items, merge them safely
           const serverIds = new Set(initialData.messages.map((m: Message) => m.id));
           const pendingOptimistic = prev.filter((m) => m.id.startsWith("temp-") && !serverIds.has(m.id));
-          return [...initialData.messages, ...pendingOptimistic];
+          const combined = [...initialData.messages, ...pendingOptimistic];
+
+          // Deduplicate strictly by message ID
+          const seen = new Set<string>();
+          return combined.filter((m) => {
+            if (seen.has(m.id)) return false;
+            seen.add(m.id);
+            return true;
+          });
         });
       }
       setIsLoading(false);
@@ -135,7 +238,11 @@ export default function ChatRoomPage({ params }: { params: Promise<{ requestId: 
       newSocket.on("receive_message", (msg: Message) => {
         setMessages((prev) => {
           if (prev.some((m) => m.id === msg.id)) return prev;
-          return [...prev, msg];
+          // Clear any matching optimistic temp item
+          const withoutMatchingTemp = prev.filter(
+            (m) => !(m.id.startsWith("temp-") && m.senderId === msg.senderId && m.content === msg.content)
+          );
+          return [...withoutMatchingTemp, msg];
         });
       });
 
@@ -223,9 +330,12 @@ export default function ChatRoomPage({ params }: { params: Promise<{ requestId: 
 
       if (res.ok) {
         const savedMessage: Message = await res.json();
-        setMessages((prev) =>
-          prev.map((m) => (m.id === tempId ? savedMessage : m))
-        );
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === savedMessage.id)) {
+            return prev.filter((m) => m.id !== tempId);
+          }
+          return prev.map((m) => (m.id === tempId ? savedMessage : m));
+        });
         mutate();
 
         if (socket && socket.connected) {
@@ -233,6 +343,7 @@ export default function ChatRoomPage({ params }: { params: Promise<{ requestId: 
             requestId,
             senderId: session.user.id,
             content,
+            message: savedMessage,
           });
         }
       } else {
@@ -332,7 +443,12 @@ export default function ChatRoomPage({ params }: { params: Promise<{ requestId: 
 
       if (msgRes.ok) {
         const saved = await msgRes.json();
-        setMessages((prev) => prev.map((m) => (m.id === tempId ? saved : m)));
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === saved.id)) {
+            return prev.filter((m) => m.id !== tempId);
+          }
+          return prev.map((m) => (m.id === tempId ? saved : m));
+        });
         mutate();
 
         if (socket && socket.connected) {
@@ -340,6 +456,7 @@ export default function ChatRoomPage({ params }: { params: Promise<{ requestId: 
             requestId,
             senderId: session.user.id,
             imageUrl: data.url,
+            message: saved,
           });
         }
       } else {
@@ -372,97 +489,179 @@ export default function ChatRoomPage({ params }: { params: Promise<{ requestId: 
     );
   }
 
-  // Determine who the "other" person is
-  const isRequester = requestDetails?.requesterId === session?.user?.id;
-  const otherPerson = isRequester 
-    ? (requestDetails?.assignedVolunteers || null)
-    : requestDetails?.requester;
-
   return (
     <div className="fixed inset-0 z-[100] flex h-[100dvh] w-full flex-col bg-[color:var(--background)] md:static md:z-auto md:h-auto md:w-auto md:flex-1 md:min-w-0 md:bg-[color:var(--surface)]/50">
       
-      {/* Header */}
-      <div className="border-b border-[color:var(--border)] p-4 bg-[color:var(--surface)]/80 backdrop-blur-xl flex items-center justify-between gap-3">
-         <div className="flex items-center gap-3">
-           <Link href="/messages" className="md:hidden flex h-8 w-8 items-center justify-center rounded-full bg-[color:var(--surface-strong)] text-[color:var(--foreground)]/70">
+      {/* Header - Group Chat */}
+      <div className="border-b border-[color:var(--border)] p-3 sm:p-4 bg-[color:var(--surface)]/80 backdrop-blur-xl flex items-center justify-between gap-3">
+         <div className="flex items-center gap-3 min-w-0">
+           <Link href="/messages" className="md:hidden flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[color:var(--surface-strong)] text-[color:var(--foreground)]/70">
              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
              </svg>
            </Link>
-            {otherPerson ? (
-              <Link href={`/profile/${otherPerson.id}`} className="block h-10 w-10 shrink-0 overflow-hidden rounded-full bg-[color:var(--surface-strong)] border border-[color:var(--border)] transition hover:ring-2 hover:ring-[#38bdf8]">
-                {otherPerson.image ? (
-                  <img src={otherPerson.image} alt={otherPerson.name} className="h-full w-full object-cover" />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-xs text-[color:var(--foreground)]/50">👤</div>
-                )}
-              </Link>
-            ) : (
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[color:var(--surface-strong)] border border-[color:var(--border)] text-sm text-[color:var(--foreground)]/50">
-                ⏳
-              </div>
-            )}
-            <div className="min-w-0 flex-1">
-              {otherPerson ? (
-                <Link href={`/profile/${otherPerson.id}`} className="block truncate font-semibold text-[color:var(--foreground)] transition hover:text-[#38bdf8]">
-                  {otherPerson.name}
-                </Link>
-              ) : (
-                <div className="truncate font-semibold text-[color:var(--foreground)]/80 flex items-center gap-2">
-                  <span>Waiting for volunteer...</span>
-                  <span className="inline-block h-2 w-2 rounded-full bg-amber-400 animate-pulse" title="Volunteer assignment pending" />
-                </div>
-              )}
-              <div className="flex items-center gap-2 mt-0.5">
-                <span className="truncate text-xs font-medium text-[#38bdf8]">{requestDetails?.title}</span>
-                {requestDetails?.status && (
-                  <span className="text-[10px] uppercase tracking-wider font-bold bg-[color:var(--surface-strong)] px-1.5 py-0.5 rounded text-[color:var(--foreground)]/60">
-                    {requestDetails.status}
+
+            {(() => {
+              const requesterRawImage = requestDetails?.requester?.image || (requestDetails?.requesterId === session?.user?.id ? session?.user?.image : null);
+              const requesterAvatarUrl = getAvatarUrl(requesterRawImage);
+              const requesterName = requestDetails?.requester?.name || "Relief Group";
+
+              return (
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#38bdf8]/20 to-sky-500/30 border border-[#38bdf8]/30 overflow-hidden text-lg shadow-sm">
+                  {requesterAvatarUrl ? (
+                    <img
+                      src={requesterAvatarUrl}
+                      alt={requesterName}
+                      referrerPolicy="no-referrer"
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLElement).style.display = "none";
+                        const fallback = e.currentTarget.parentElement?.querySelector(".header-fallback") as HTMLElement;
+                        if (fallback) fallback.style.display = "flex";
+                      }}
+                    />
+                  ) : null}
+                  <span
+                    className="header-fallback flex items-center justify-center font-bold text-sm text-[#38bdf8]"
+                    style={{ display: requesterAvatarUrl ? "none" : "flex" }}
+                  >
+                    {requesterName?.charAt(0)?.toUpperCase() || "👥"}
                   </span>
-                )}
-              </div>
-            </div>
+                </div>
+              );
+            })()}
+
+           <div className="min-w-0 flex-1">
+             <div className="flex items-center gap-2">
+               <h1 className="truncate font-bold text-sm sm:text-base text-[color:var(--foreground)]" title={requestDetails?.title}>
+                 {requestDetails?.title || "Relief Group Chat"}
+               </h1>
+               {requestDetails?.status && (
+                 <span className="shrink-0 text-[10px] uppercase tracking-wider font-bold bg-[#38bdf8]/10 text-[#38bdf8] border border-[#38bdf8]/20 px-1.5 py-0.5 rounded">
+                   {requestDetails.status}
+                 </span>
+               )}
+             </div>
+
+             <div className="flex items-center gap-2 mt-0.5 text-xs text-[color:var(--foreground)]/60">
+               <button
+                 type="button"
+                 onClick={() => setShowMembersModal(true)}
+                 className="flex items-center gap-1.5 font-medium hover:text-[#38bdf8] transition-colors text-left"
+               >
+                 <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                 <span>{groupMembers.length} group {groupMembers.length === 1 ? "member" : "members"}</span>
+                 <span className="text-[11px] underline underline-offset-2 text-[#38bdf8]">(View)</span>
+               </button>
+               <span>•</span>
+               <span className="capitalize truncate text-[color:var(--foreground)]/50">{requestDetails?.category || "Request"}</span>
+             </div>
+           </div>
          </div>
-         <Link 
-            href={`/requests/${requestDetails?.id || requestId}`}
-            className="hidden sm:inline-flex items-center justify-center rounded-full bg-[color:var(--surface-strong)] px-4 py-2 text-xs font-semibold text-[color:var(--foreground)] transition hover:bg-[color:var(--border)]"
-          >
-            View Request
-          </Link>
+
+         <div className="flex items-center gap-2 shrink-0">
+           <button
+             type="button"
+             onClick={() => setShowMembersModal(true)}
+             className="inline-flex items-center gap-1.5 rounded-full bg-[color:var(--surface-strong)] px-3 py-1.5 text-xs font-semibold text-[color:var(--foreground)] transition hover:bg-[color:var(--border)] border border-[color:var(--border)]"
+             title="View who is in this group"
+           >
+             <span>👥</span>
+             <span className="hidden sm:inline">Members</span>
+             <span className="rounded-full bg-[#38bdf8]/20 text-[#38bdf8] px-1.5 py-0.2 text-[10px] font-bold">{groupMembers.length}</span>
+           </button>
+
+           <Link 
+             href={`/requests/${requestDetails?.id || requestId}`}
+             className="hidden sm:inline-flex items-center justify-center rounded-full bg-[color:var(--surface-strong)] px-3.5 py-1.5 text-xs font-semibold text-[color:var(--foreground)] transition hover:bg-[color:var(--border)] border border-[color:var(--border)]"
+           >
+             View Request
+           </Link>
+         </div>
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-4">
-        {messages.length === 0 ? (
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6 pt-6 sm:pt-8 space-y-4">
+        {uniqueMessages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center text-center text-[color:var(--foreground)]/50">
             <span className="text-4xl mb-4">👋</span>
-            <p className="text-sm font-medium">Say hello! Be the first to start the conversation.</p>
+            <p className="text-sm font-medium">Welcome to the live group chat for &ldquo;{requestDetails?.title || "this request"}&rdquo;!</p>
+            <p className="text-xs text-[color:var(--foreground)]/40 mt-1">Coordinate response efforts with all volunteers and coordinators.</p>
           </div>
         ) : (
-          messages.map((msg, index) => {
+          uniqueMessages.map((msg, index) => {
             const isMine = msg.senderId === session?.user?.id;
-            const showAvatar = index === 0 || messages[index - 1].senderId !== msg.senderId;
+            const isFirstInCluster = index === 0 || uniqueMessages[index - 1].senderId !== msg.senderId;
+            const isLastInCluster = index === uniqueMessages.length - 1 || uniqueMessages[index + 1].senderId !== msg.senderId;
+
+            // Resolve avatar with fallbacks: session user image (if mine) -> message sender image -> groupMembers match
+            const memberWithImage = groupMembers.find((m) => m.id === msg.senderId && m.image);
+            const rawAvatar = (isMine && session?.user?.image) || msg.sender?.image || memberWithImage?.image || null;
+            const avatarUrl = getAvatarUrl(rawAvatar);
+            const senderName = msg.sender?.name || (isMine ? session?.user?.name : "User") || "User";
 
             return (
-              <div key={msg.id} className={`flex w-full group ${isMine ? "justify-end" : "justify-start"}`}>
-                <div className={`flex max-w-[85%] sm:max-w-[70%] items-end gap-2 ${isMine ? "flex-row-reverse" : "flex-row"}`}>
+              <div key={msg.id} className={`flex w-full group/row ${isMine ? "justify-end" : "justify-start"}`}>
+                <div className={`flex max-w-[85%] sm:max-w-[70%] items-end gap-2 group/bubble relative ${isMine ? "flex-row-reverse" : "flex-row"}`}>
                   
-                  {/* Avatar */}
-                  {!isMine && (
-                    <div className="shrink-0 h-8 w-8 rounded-full bg-[color:var(--surface-strong)] overflow-hidden shadow-sm hidden sm:block border border-[color:var(--border)]">
-                      {showAvatar && (
-                        msg.sender.image ? (
-                          <img src={msg.sender.image} alt={msg.sender.name} className="h-full w-full object-cover" />
-                        ) : (
-                          <div className="flex h-full items-center justify-center text-xs text-[color:var(--foreground)]/50">👤</div>
-                        )
-                      )}
-                    </div>
+                  {/* Avatar (visible for both incoming and own sent messages) */}
+                  {isLastInCluster ? (
+                    <Link
+                      href={isMine ? "/profile" : `/profile/${msg.senderId}`}
+                      title={isMine ? "View your profile" : `View ${senderName}'s profile`}
+                      className="shrink-0 h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-[color:var(--surface-strong)] overflow-hidden shadow-sm border border-[color:var(--border)] transition hover:ring-2 hover:ring-[#38bdf8] flex items-center justify-center"
+                    >
+                      {avatarUrl ? (
+                        <img
+                          src={avatarUrl}
+                          alt={senderName}
+                          referrerPolicy="no-referrer"
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = "none";
+                            const fallback = e.currentTarget.parentElement?.querySelector(".msg-avatar-fallback") as HTMLElement;
+                            if (fallback) fallback.style.display = "flex";
+                          }}
+                        />
+                      ) : null}
+                      <span
+                        className="msg-avatar-fallback h-full w-full items-center justify-center text-[11px] font-bold text-sky-400 bg-sky-500/20"
+                        style={{ display: avatarUrl ? "none" : "flex" }}
+                      >
+                        {senderName?.charAt(0)?.toUpperCase() || "👤"}
+                      </span>
+                    </Link>
+                  ) : (
+                    <div className="shrink-0 w-7 sm:w-8" aria-hidden="true" />
+                  )}
+
+                  {/* 3-dots action button on hover for own messages */}
+                  {isMine && !msg.isDeleted && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedMessageId(selectedMessageId === msg.id ? null : msg.id);
+                      }}
+                      className="opacity-0 group-hover/bubble:opacity-100 focus:opacity-100 transition-opacity p-1.5 rounded-full hover:bg-[color:var(--surface-strong)] text-[color:var(--foreground)]/50 hover:text-[color:var(--foreground)] shrink-0 self-center"
+                      title="Edit or Delete message"
+                      aria-label="Message options"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                      </svg>
+                    </button>
                   )}
 
                   {/* Bubble */}
                   <div 
                     className="relative flex flex-col gap-1 min-w-0 cursor-pointer"
+                    onClick={(e) => {
+                      if (isMine && !msg.isDeleted) {
+                        e.stopPropagation();
+                        setSelectedMessageId(selectedMessageId === msg.id ? null : msg.id);
+                      }
+                    }}
                     onContextMenu={(e) => {
                       if (isMine && !msg.isDeleted) {
                         e.preventDefault();
@@ -471,8 +670,18 @@ export default function ChatRoomPage({ params }: { params: Promise<{ requestId: 
                       }
                     }}
                   >
-                    {showAvatar && !isMine && (
-                      <span className="text-[10px] font-medium text-[color:var(--foreground)]/50 ml-1">{msg.sender.name}</span>
+                    {isFirstInCluster && !isMine && (
+                      <div className="flex items-center gap-1.5 ml-1 mb-0.5">
+                        <Link 
+                          href={`/profile/${msg.senderId}`}
+                          className="text-[11px] font-semibold text-[color:var(--foreground)]/90 hover:text-[#38bdf8] transition-colors"
+                        >
+                          {senderName}
+                        </Link>
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-[color:var(--surface-strong)] text-[color:var(--foreground)]/60 uppercase font-semibold border border-[color:var(--border)]">
+                          {msg.sender?.role || "MEMBER"}
+                        </span>
+                      </div>
                     )}
                     
                     {msg.isDeleted ? (
@@ -510,27 +719,33 @@ export default function ChatRoomPage({ params }: { params: Promise<{ requestId: 
                       {format(new Date(msg.createdAt), "h:mm a")}
                     </span>
 
-                    {/* Context Menu Popover */}
+                    {/* Context Menu Popover: Position below if first message, otherwise above */}
                     {selectedMessageId === msg.id && (
-                      <div className="absolute bottom-full mb-1 right-0 z-50 flex items-center gap-1 bg-[color:var(--surface)] border border-[color:var(--border)] p-1.5 rounded-2xl shadow-xl shadow-black/10 animate-in fade-in zoom-in-95 duration-100">
+                      <div
+                        className={`absolute ${
+                          index <= 1 ? "top-full mt-2" : "bottom-full mb-2"
+                        } right-0 z-50 flex items-center gap-1 bg-[color:var(--surface)] border border-[color:var(--border)] p-1.5 rounded-2xl shadow-2xl shadow-black/30 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150`}
+                      >
                         <button 
+                          type="button"
                           onClick={(e) => { e.stopPropagation(); handleEditInitiate(msg); setSelectedMessageId(null); }}
-                          className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[color:var(--surface-strong)] text-[color:var(--foreground)] text-sm font-medium transition-colors"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-[color:var(--surface-strong)] text-[color:var(--foreground)] text-xs font-semibold transition-colors"
                         >
-                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <svg className="h-3.5 w-3.5 text-[#38bdf8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                           </svg>
-                          Edit
+                          <span>Edit</span>
                         </button>
-                        <div className="w-[1px] h-6 bg-[color:var(--border)]"></div>
+                        <div className="w-[1px] h-5 bg-[color:var(--border)]" />
                         <button 
+                          type="button"
                           onClick={(e) => { e.stopPropagation(); handleDeleteMessage(msg.id); setSelectedMessageId(null); }}
-                          className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-red-500/10 text-red-500 text-sm font-medium transition-colors"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-red-500/10 text-red-500 text-xs font-semibold transition-colors"
                         >
-                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <svg className="h-3.5 w-3.5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
-                          Delete
+                          <span>Delete</span>
                         </button>
                       </div>
                     )}
@@ -600,6 +815,119 @@ export default function ChatRoomPage({ params }: { params: Promise<{ requestId: 
           </form>
         </div>
       </div>
+
+      {/* Group Members Modal */}
+      {showMembersModal && (
+        <div 
+          className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150"
+          onClick={() => setShowMembersModal(false)}
+        >
+          <div 
+            className="w-full max-w-md rounded-3xl border border-[color:var(--border-strong)] bg-[color:var(--surface)] p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-[color:var(--border)]">
+              <div>
+                <h3 className="text-base font-bold text-[color:var(--foreground)] flex items-center gap-2">
+                  <span>👥</span>
+                  <span>Group Members</span>
+                  <span className="text-xs bg-[#38bdf8]/15 text-[#38bdf8] px-2 py-0.5 rounded-full font-bold">
+                    {groupMembers.length}
+                  </span>
+                </h3>
+                <p className="text-xs text-[color:var(--foreground)]/60 mt-0.5 truncate max-w-xs">
+                  {requestDetails?.title}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMembersModal(false)}
+                className="h-8 w-8 rounded-full flex items-center justify-center bg-[color:var(--surface-strong)] hover:bg-[color:var(--border)] text-[color:var(--foreground)]/70 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
+              {groupMembers.length === 0 ? (
+                <div className="p-4 text-center text-xs text-[color:var(--foreground)]/50">
+                  No group members found.
+                </div>
+              ) : (
+                groupMembers.map((member) => (
+                  <div
+                    key={member.id}
+                    className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-[color:var(--surface-strong)]/50 border border-[color:var(--border)] hover:border-[color:var(--border-strong)] transition-all"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Link href={`/profile/${member.id}`} className="shrink-0" onClick={() => setShowMembersModal(false)}>
+                        <div className="h-10 w-10 rounded-full bg-[color:var(--surface)] border border-[color:var(--border)] overflow-hidden flex items-center justify-center transition hover:ring-2 hover:ring-[#38bdf8]">
+                          {member.image ? (
+                            <img
+                              src={getAvatarUrl(member.image)!}
+                              alt={member.name}
+                              referrerPolicy="no-referrer"
+                              className="h-full w-full object-cover"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLElement).style.display = "none";
+                                const fallback = e.currentTarget.parentElement?.querySelector(".member-fallback") as HTMLElement;
+                                if (fallback) fallback.style.display = "flex";
+                              }}
+                            />
+                          ) : null}
+                          <span
+                            className="member-fallback h-full w-full items-center justify-center text-sm font-bold text-sky-400 bg-sky-500/20"
+                            style={{ display: member.image ? "none" : "flex" }}
+                          >
+                            {member.name?.charAt(0)?.toUpperCase() || "👤"}
+                          </span>
+                        </div>
+                      </Link>
+                      <div className="min-w-0">
+                        <Link
+                          href={`/profile/${member.id}`}
+                          onClick={() => setShowMembersModal(false)}
+                          className="font-semibold text-sm text-[color:var(--foreground)] truncate block hover:text-[#38bdf8] transition-colors"
+                        >
+                          {member.name} {member.id === session?.user?.id && <span className="text-xs text-[#38bdf8] font-normal">(You)</span>}
+                        </Link>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[color:var(--surface)] border border-[color:var(--border)] text-[color:var(--foreground)]/70">
+                            {member.tag || member.role}
+                          </span>
+                          {member.isVerified && (
+                            <span className="text-[10px] text-emerald-500 font-semibold flex items-center gap-0.5">
+                              ✓ Verified
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <Link
+                      href={`/profile/${member.id}`}
+                      onClick={() => setShowMembersModal(false)}
+                      className="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[color:var(--surface)] hover:bg-[#38bdf8] hover:text-[#13151A] text-xs font-semibold text-[color:var(--foreground)] border border-[color:var(--border)] transition-all"
+                    >
+                      Profile →
+                    </Link>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="pt-2 border-t border-[color:var(--border)] flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowMembersModal(false)}
+                className="px-4 py-2 rounded-full bg-[color:var(--surface-strong)] hover:bg-[color:var(--border)] text-xs font-semibold text-[color:var(--foreground)] transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

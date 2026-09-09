@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { getAvatarUrl } from "@/lib/avatar";
 
 type PendingVolunteer = {
   id: string;
@@ -77,20 +79,20 @@ export function VerificationQueue() {
     <div className="mt-4 space-y-3">
       {volunteers.map((v) => (
         <div key={v.id} className="flex items-center justify-between rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 overflow-hidden rounded-full border border-[color:var(--border)] bg-slate-100 dark:bg-slate-800 flex shrink-0 items-center justify-center">
+          <Link href={`/profile/${v.id}`} className="flex items-center gap-3 group hover:opacity-90 transition-opacity">
+            <div className="h-10 w-10 overflow-hidden rounded-full border border-[color:var(--border)] bg-slate-100 dark:bg-slate-800 flex shrink-0 items-center justify-center group-hover:ring-2 group-hover:ring-sky-400 transition-all">
               {v.image ? (
-                <Image src={v.image} alt={v.name} width={40} height={40} className="h-full w-full object-cover" unoptimized={true} />
+                <Image src={getAvatarUrl(v.image)!} alt={v.name} width={40} height={40} className="h-full w-full object-cover" unoptimized={true} />
               ) : (
                 <span className="text-lg">👤</span>
               )}
             </div>
             <div>
-              <p className="text-sm font-medium text-[color:var(--foreground)]">{v.name}</p>
+              <p className="text-sm font-medium text-[color:var(--foreground)] group-hover:text-sky-400 group-hover:underline transition-colors">{v.name}</p>
               <p className="text-xs text-slate-500">{v.email}</p>
               <p className="text-[10px] text-slate-400 mt-0.5">Applied: {new Date(v.createdAt).toLocaleDateString()}</p>
             </div>
-          </div>
+          </Link>
           <button
             onClick={() => handleApprove(v.id)}
             disabled={approvingId === v.id}

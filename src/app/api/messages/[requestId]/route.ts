@@ -29,7 +29,13 @@ export async function GET(
       where: { id: requestId },
       include: {
         requester: { select: { id: true, name: true, image: true, role: true } },
-        assignedVolunteers: { select: { id: true, name: true, image: true, role: true } }
+        assignedVolunteers: { select: { id: true, name: true, image: true, role: true } },
+        claims: {
+          include: {
+            volunteer: { select: { id: true, name: true, image: true, role: true, isVerified: true, createdAt: true } }
+          },
+          orderBy: { createdAt: "asc" }
+        }
       }
     });
 
@@ -38,7 +44,7 @@ export async function GET(
     }
 
     const isRequester = requestDetails.requesterId === userId;
-    const isVolunteer = requestDetails.assignedVolunteers?.id === userId;
+    const isVolunteer = requestDetails.assignedVolunteers?.id === userId || requestDetails.claims.some((c) => c.volunteerId === userId);
     const isCoordinator = session.user.role === "COORDINATOR";
     
     if (!isRequester && !isVolunteer && !isCoordinator) {
@@ -85,7 +91,10 @@ export async function POST(
     // Verify access
     const helpRequest = await prisma.helpRequest.findUnique({
       where: { id: requestId },
-      include: { assignedVolunteers: true }
+      include: {
+        assignedVolunteers: true,
+        claims: true,
+      }
     });
 
     if (!helpRequest) {
@@ -93,17 +102,12 @@ export async function POST(
     }
 
     const isRequester = helpRequest.requesterId === userId;
-    const isVolunteer = helpRequest.assignedVolunteers?.id === userId;
+    const isVolunteer = helpRequest.assignedVolunteers?.id === userId || helpRequest.claims.some((c) => c.volunteerId === userId);
     const isCoordinator = session.user.role === "COORDINATOR";
     
     if (!isRequester && !isVolunteer && !isCoordinator) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-
-    // Determine receiver for notification logic
-    const receiverId = isRequester 
-      ? helpRequest.assignedVolunteers?.id 
-      : helpRequest.requesterId;
 
     // Save message
     const newMessage = await prisma.chatMessage.create({
@@ -120,11 +124,27 @@ export async function POST(
       }
     });
 
-    if (receiverId) {
+    // Determine all recipients in the group chat
+    const recipientIds = new Set<string>();
+    if (helpRequest.requesterId !== userId) {
+      recipientIds.add(helpRequest.requesterId);
+    }
+    if (helpRequest.assignedVolunteers?.id && helpRequest.assignedVolunteers.id !== userId) {
+      recipientIds.add(helpRequest.assignedVolunteers.id);
+    }
+    helpRequest.claims.forEach((claim) => {
+      if (claim.volunteerId !== userId) {
+        recipientIds.add(claim.volunteerId);
+      }
+    });
+
+    // Notify all other members of the group chat
+    const previewText = parsed.data.content ? parsed.data.content.substring(0, 60) : "Photo attachment";
+    for (const recId of recipientIds) {
       await prisma.notification.create({
         data: {
-          userId: receiverId,
-          message: `New message on "${helpRequest.title}": ${parsed.data.content ? parsed.data.content.substring(0, 60) : "Photo attachment"}`,
+          userId: recId,
+          message: `New message in "${helpRequest.title}": ${previewText}`,
         }
       }).catch(err => console.error("Notification error:", err));
     }

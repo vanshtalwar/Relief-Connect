@@ -15,7 +15,38 @@ export async function GET(_request: Request, { params }: Params) {
         statusHistory: {
           orderBy: { changedAt: "asc" },
         },
-        assignedVolunteers: true,
+        assignedVolunteers: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+            role: true,
+            latitude: true,
+            longitude: true,
+            isVerified: true,
+            backgroundCheck: true,
+          },
+        },
+        claims: {
+          include: {
+            volunteer: {
+              select: {
+                id: true,
+                name: true,
+                image: true,
+                role: true,
+                latitude: true,
+                longitude: true,
+                isVerified: true,
+                backgroundCheck: true,
+              },
+            },
+          },
+          orderBy: { createdAt: "asc" },
+        },
+        requester: {
+          select: { id: true, name: true, image: true, role: true },
+        },
       },
     });
 
@@ -23,7 +54,18 @@ export async function GET(_request: Request, { params }: Params) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ request });
+    const allResponders = [
+      ...(request.assignedVolunteers ? [request.assignedVolunteers] : []),
+      ...(request.claims ? request.claims.map((c) => c.volunteer) : []),
+    ].filter((v, i, self) => i === self.findIndex((t) => t.id === v.id));
+
+    return NextResponse.json({
+      request: {
+        ...request,
+        responders: allResponders,
+        volunteer: request.assignedVolunteers || (allResponders[0] ?? null),
+      },
+    });
   } catch (error) {
     console.error("GET request details error:", error);
     return NextResponse.json({ error: "Failed to fetch request details" }, { status: 500 });
@@ -78,6 +120,7 @@ export async function DELETE(_request: Request, { params }: Params) {
     }
 
     await prisma.$transaction([
+      prisma.requestClaim.deleteMany({ where: { requestId: id } }),
       prisma.statusEvent.deleteMany({ where: { requestId: id } }),
       prisma.chatMessage.deleteMany({ where: { requestId: id } }),
       prisma.review.deleteMany({ where: { requestId: id } }),

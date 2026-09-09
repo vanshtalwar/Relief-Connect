@@ -11,6 +11,7 @@ import { RequestDetailMap } from "@/components/request-detail-map";
 import { ReviewForm } from "@/components/review-form";
 import { SuggestedVolunteers } from "@/components/suggested-volunteers";
 import { DeleteRequestButton } from "@/components/delete-request-button";
+import { getAvatarUrl } from "@/lib/avatar";
 
 export default async function RequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
@@ -23,6 +24,23 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
         orderBy: { changedAt: "asc" },
       },
       assignedVolunteers: true,
+      claims: {
+        include: {
+          volunteer: {
+            select: {
+              id: true,
+              name: true,
+              image: true,
+              role: true,
+              latitude: true,
+              longitude: true,
+              isVerified: true,
+              backgroundCheck: true,
+            }
+          }
+        },
+        orderBy: { createdAt: "asc" }
+      },
       requester: {
         select: { id: true, name: true, image: true, role: true }
       }
@@ -40,7 +58,13 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
     }
   }) : null;
 
-  const isAssigned = session?.user?.id && dbRequest.assignedVolunteers ? dbRequest.assignedVolunteers.id === session.user.id : false;
+  // Deduplicate all responders (primary assigned + all claims)
+  const allResponders = [
+    ...(dbRequest.assignedVolunteers ? [dbRequest.assignedVolunteers] : []),
+    ...(dbRequest.claims ? dbRequest.claims.map((c) => c.volunteer) : [])
+  ].filter((v, i, self) => i === self.findIndex((t) => t.id === v.id));
+
+  const isAssigned = session?.user?.id ? allResponders.some((r) => r.id === session.user.id) : false;
 
   const request = {
     ...dbRequest,
@@ -63,6 +87,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
       isVerified: dbRequest.assignedVolunteers.isVerified,
       backgroundCheck: dbRequest.assignedVolunteers.backgroundCheck,
     } : null,
+    responders: allResponders,
   };
 
   const isVolunteer = session?.user?.role === "VOLUNTEER";
@@ -70,11 +95,13 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
   const isOpen = request.status === "OPEN";
   const isResolved = request.status === "RESOLVED" || request.status === "CANCELLED";
   const isOwnRequest = session?.user?.id && request.requesterId === session.user.id;
-  const canClaim = isVolunteer && !isResolved && !isOwnRequest && !isAssigned;
-  const actionLabel = isOpen ? "Claim Request" : "Join Team";
+  const canClaim = (isVolunteer || isCoordinator) && !isResolved && !isOwnRequest && !isAssigned;
+  const actionLabel = allResponders.length === 0
+    ? "Claim Request"
+    : `Join Response Team (Responder #${allResponders.length + 1})`;
 
   return (
-    <AppShell title={request.title} subtitle="Request detail, status history, and claim flow live in the same panel so responders can move quickly.">
+    <AppShell title={request.title} subtitle="Request detail, status history, and team claim flow live in the same panel so responders can move quickly.">
       <div className="grid gap-5 lg:grid-cols-3">
         {/* Left Column: Request details */}
         <div className="lg:col-span-2 flex flex-col gap-5">
@@ -112,7 +139,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                   <div className="flex items-center gap-3">
                     <Link href={`/profile/${request.requester.id}`} className="block h-10 w-10 shrink-0 overflow-hidden rounded-full bg-[color:var(--surface-strong)] transition hover:ring-2 hover:ring-[#38bdf8]">
                       {request.requester.image ? (
-                        <img src={request.requester.image} alt={request.requester.name} className="h-full w-full object-cover" />
+                        <img src={getAvatarUrl(request.requester.image)!} alt={request.requester.name} referrerPolicy="no-referrer" className="h-full w-full object-cover" />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center text-sm text-[color:var(--foreground)]/50">👤</div>
                       )}
@@ -132,7 +159,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                     <div className="flex items-center gap-3">
                       <Link href={`/profile/${request.volunteer.id}`} className="block h-10 w-10 shrink-0 overflow-hidden rounded-full bg-[color:var(--surface-strong)] transition hover:ring-2 hover:ring-[#3FA37E]">
                         {request.volunteer.image ? (
-                          <img src={request.volunteer.image} alt={request.volunteer.name} className="h-full w-full object-cover" />
+                          <img src={getAvatarUrl(request.volunteer.image)!} alt={request.volunteer.name} referrerPolicy="no-referrer" className="h-full w-full object-cover" />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center text-sm text-[color:var(--foreground)]/50">👤</div>
                         )}
@@ -150,7 +177,9 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
               
               <div className="mt-8">
                 <p className="text-[13px] font-medium text-[color:var(--foreground)] mb-3">
-                  {request.volunteer ? "Live Tracking Map" : "Location Map"}
+                  {request.responders.length > 0
+                    ? `Live Tracking Map (${request.responders.length} ${request.responders.length === 1 ? "Responder" : "Responders"})`
+                    : "Location Map"}
                 </p>
                 <div className="rounded-xl overflow-hidden border border-[color:var(--border)] shadow-sm">
                   <RequestDetailMap
@@ -159,6 +188,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                     victimLng={request.longitude}
                     locationName={request.locationName}
                     initialVolunteer={request.volunteer}
+                    responders={allResponders}
                   />
                 </div>
               </div>
@@ -216,6 +246,59 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                 </div>
               )}
               
+              {/* Response Team Directory */}
+              <div className="mt-8 border-t border-[color:var(--border)] pt-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-[14px] font-semibold text-[color:var(--foreground)]">
+                    Response Team ({request.responders.length})
+                  </h3>
+                  {canClaim && (
+                    <span className="text-[11px] text-emerald-400 font-medium bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                      Open for responders
+                    </span>
+                  )}
+                </div>
+                {request.responders.length > 0 ? (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {request.responders.map((volunteer) => (
+                      <Link
+                        key={volunteer.id}
+                        href={`/profile/${volunteer.id}`}
+                        className="flex items-center gap-3 p-3 rounded-xl bg-[color:var(--surface)] border border-[color:var(--border)] hover:border-sky-400/40 hover:bg-[color:var(--surface-strong)] transition-all group"
+                      >
+                        <div className="h-10 w-10 overflow-hidden rounded-full border border-[color:var(--border)] bg-slate-800 flex shrink-0 items-center justify-center">
+                          {volunteer.image ? (
+                            <img
+                              src={getAvatarUrl(volunteer.image)!}
+                              alt={volunteer.name}
+                              referrerPolicy="no-referrer"
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-xs text-slate-400 font-bold">{volunteer.name.charAt(0).toUpperCase()}</span>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-xs font-semibold text-[color:var(--foreground)] group-hover:text-sky-400 group-hover:underline truncate">
+                              {volunteer.name}
+                            </p>
+                            {volunteer.isVerified && (
+                              <span className="text-[10px] text-emerald-400" title="Verified ID">✓</span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-[color:var(--foreground)]/50 mt-0.5">Responder • View profile →</p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-xl border border-dashed border-[color:var(--border)] bg-[color:var(--surface)]/30 text-center">
+                    <p className="text-xs text-[color:var(--foreground)]/60">No volunteers have claimed this request yet. Be the first to join!</p>
+                  </div>
+                )}
+              </div>
+
               {isCoordinator && !isResolved && (
                 <div className="mt-8 border-t border-[color:var(--border)] pt-6">
                   <SuggestedVolunteers requestId={request.id} />
@@ -242,19 +325,22 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
           {session?.user?.id && (session.user.id === request.requesterId || isAssigned || isCoordinator) && (
             <section className="bg-[color:var(--muted)] border border-[color:var(--border)] rounded-xl shadow-sm p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
               <div>
-                <h3 className="text-[15px] font-medium text-[color:var(--foreground)]">Coordinate Response</h3>
-                <p className="text-[color:var(--foreground)]/70 mt-1.5 text-[13px] leading-relaxed max-w-md">
-                  Need to coordinate details or share a photo? Open the live chat room to communicate directly with {isAssigned ? "the requester" : request.volunteer ? "your volunteer" : "volunteers and coordinators"}.
+                <div className="inline-flex items-center gap-2 mb-1.5">
+                  <span className="h-2 w-2 rounded-full bg-sky-400 animate-pulse" />
+                  <h3 className="text-[15px] font-semibold text-[color:var(--foreground)]">Group Live Chat</h3>
+                </div>
+                <p className="text-[color:var(--foreground)]/70 text-[13px] leading-relaxed max-w-md">
+                  Coordinate rescue logistics, post location updates, and message all responders in the <strong className="text-[color:var(--foreground)]">&quot;{request.title}&quot;</strong> group live chat.
                 </p>
               </div>
               <Link 
                 href={`/messages/${request.id}`}
-                className="whitespace-nowrap flex items-center justify-center gap-2 rounded-md bg-[color:var(--foreground)] px-5 py-2.5 text-[13px] font-semibold text-[color:var(--background)] transition hover:opacity-80"
+                className="whitespace-nowrap flex items-center justify-center gap-2 rounded-md bg-sky-500 hover:bg-sky-400 px-5 py-2.5 text-[13px] font-bold text-slate-950 transition hover:scale-[1.02] shadow-md"
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                 </svg>
-                Open Live Chat
+                <span>Open Group Live Chat ({request.responders.length + 1})</span>
               </Link>
             </section>
           )}
@@ -267,7 +353,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
               <h3 className="text-[13px] font-medium text-[color:var(--foreground)] tracking-wide">Status Timeline</h3>
             </div>
             <div className="p-5">
-              <StatusTimeline events={request.statusHistory} volunteer={request.volunteer} />
+              <StatusTimeline events={request.statusHistory} volunteer={request.volunteer} responders={allResponders} />
             </div>
           </section>
         </div>

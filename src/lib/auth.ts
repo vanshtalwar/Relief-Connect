@@ -68,33 +68,50 @@ export const authOptions: NextAuthOptions = {
       }
       return `${baseUrl}/dashboard`;
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, profile }: any) {
+      const oauthImage =
+        user?.image ||
+        (user as any)?.picture ||
+        (profile as any)?.picture ||
+        (profile as any)?.avatar_url ||
+        (token as any)?.picture ||
+        (token as any)?.image ||
+        null;
+
       if (account?.provider === "google" && user?.email) {
         // Sync Google user with our database safely
         let dbUser = await prisma.user.findUnique({ where: { email: user.email } });
-        
+        const imageToSave = oauthImage || dbUser?.image || null;
+
         if (dbUser) {
-          await prisma.$executeRaw`
-            UPDATE "User" 
-            SET name = ${user.name || "Unknown"}, image = ${user.image || null} 
-            WHERE email = ${user.email}
-          `;
-          dbUser.name = user.name || "Unknown";
-          dbUser.image = user.image || null;
+          await prisma.user.update({
+            where: { email: user.email },
+            data: {
+              name: user.name || dbUser.name || "Unknown",
+              ...(imageToSave ? { image: imageToSave } : {}),
+            },
+          });
+          dbUser = await prisma.user.findUnique({ where: { email: user.email } });
         } else {
-          const id = randomUUID();
-          await prisma.$executeRaw`
-            INSERT INTO "User" (id, email, name, image, role, "isVerified", "backgroundCheck", "locationConsent", "createdAt")
-            VALUES (${id}, ${user.email}, ${user.name || "Unknown"}, ${user.image || null}, 'VICTIM', true, false, false, NOW())
-          `;
-          dbUser = await prisma.user.findUnique({ where: { id } });
+          dbUser = await prisma.user.create({
+            data: {
+              email: user.email,
+              name: user.name || "Unknown",
+              image: imageToSave,
+              role: "VICTIM",
+              isVerified: true,
+              backgroundCheck: false,
+              locationConsent: false,
+            },
+          });
         }
 
         if (dbUser) {
           token.userId = dbUser.id;
           token.name = dbUser.name;
           token.role = dbUser.role;
-          token.image = dbUser.image;
+          token.image = dbUser.image || oauthImage;
+          token.picture = token.image;
           token.phone = dbUser.phone;
         }
       } else if (user) {
@@ -102,21 +119,41 @@ export const authOptions: NextAuthOptions = {
         token.userId = user.id;
         token.name = user.name;
         token.role = (user as { role?: typeof token.role }).role ?? token.role ?? "VICTIM";
-        token.image = (user as { image?: string | null }).image ?? null;
+        token.image = (user as { image?: string | null }).image || oauthImage;
+        token.picture = token.image;
         token.phone = (user as { phone?: string | null }).phone ?? null;
       }
 
-      // Always sync token with latest database state on session refresh / client update()
-      if (token.userId) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.userId as string },
-          select: { role: true, phone: true, image: true, name: true },
+      // Always sync token with latest database state using email or id/sub
+      const lookupEmail = (token.email as string) || (user?.email as string);
+      const lookupId = (token.userId as string) || (token.sub as string);
+
+      if (lookupEmail || lookupId) {
+        const dbUser = await prisma.user.findFirst({
+          where: {
+            OR: [
+              ...(lookupEmail ? [{ email: lookupEmail }] : []),
+              ...(lookupId ? [{ id: lookupId }] : []),
+            ],
+          },
+          select: { id: true, role: true, phone: true, image: true, name: true, email: true },
         });
+
         if (dbUser) {
+          token.userId = dbUser.id;
           token.role = dbUser.role;
           token.phone = dbUser.phone;
-          token.image = dbUser.image;
+          token.image = dbUser.image || token.image || (token as any).picture || oauthImage;
+          token.picture = token.image;
           token.name = dbUser.name;
+
+          // Auto-heal database record if image was previously null
+          if (!dbUser.image && token.image) {
+            await prisma.user.update({
+              where: { id: dbUser.id },
+              data: { image: token.image as string },
+            }).catch(() => {});
+          }
         }
       }
 
@@ -124,13 +161,26 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = (token.userId as string) ?? "";
+        session.user.id = (token.userId as string) || (token.sub as string) || "";
         if (token.name) {
           session.user.name = token.name as string;
         }
         session.user.role = (token.role as string) ?? "VICTIM";
-        session.user.image = (token.image as string) ?? null;
+        session.user.image = (token.image as string) || (token.picture as string) || (session.user as any).image || null;
         session.user.phone = (token.phone as string) ?? null;
+
+        // Ensure user image is never null if available in the database
+        if (!session.user.image && session.user.id) {
+          try {
+            const dbU = await prisma.user.findUnique({
+              where: { id: session.user.id },
+              select: { image: true },
+            });
+            if (dbU?.image) {
+              session.user.image = dbU.image;
+            }
+          } catch {}
+        }
       }
 
       return session;

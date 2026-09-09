@@ -265,53 +265,76 @@ export function RequestMap({ requests }: { requests: any[] }) {
                     </Marker>
                   )}
                   
-                  {filteredRequests.map((request) => (
-                    <LayerGroup key={request.id}>
-                      <Marker position={[request.latitude, request.longitude]} icon={customIcon || undefined}>
-                        <Popup>
-                          <div className="max-w-xs">
-                            <p className="text-xs uppercase tracking-[0.2em] text-[color:var(--foreground)]/55">{categoryLabels[request.category as Category]}</p>
-                            <h3 className="text-base font-semibold">{request.title}</h3>
-                            <p className="text-sm text-[color:var(--foreground)]/72">{request.description}</p>
-                            {request.locationName && (
-                              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-2">
-                                📍 {request.locationName}
-                              </p>
-                            )}
-                          </div>
-                        </Popup>
-                      </Marker>
-                      {request.status !== "OPEN" && request.volunteer && request.volunteer.latitude && request.volunteer.longitude && (
-                        <LayerGroup>
-                          <Marker
-                            position={[request.volunteer.latitude, request.volunteer.longitude]}
-                            icon={volunteerIcon || undefined}
-                          >
-                            <Popup>
+                  {filteredRequests.map((request) => {
+                    const activeResponders: any[] = (
+                      request.responders && request.responders.length > 0
+                        ? request.responders
+                        : (request.volunteer ? [request.volunteer] : [])
+                    ).filter((r: any) => r && r.latitude != null && r.longitude != null);
+
+                    return (
+                      <LayerGroup key={request.id}>
+                        <Marker position={[request.latitude, request.longitude]} icon={customIcon || undefined}>
+                          <Popup>
+                            <div className="max-w-xs space-y-2">
                               <div>
-                                <p className="text-xs uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-semibold">Volunteer (En Route)</p>
-                                <h4 className="font-bold">{request.volunteer.name}</h4>
-                                <p className="text-xs text-slate-500">Live tracker coordinates</p>
-                                <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-2">
-                                  Proximity: {formatDistance(haversineDistanceKm(
-                                    { latitude: request.latitude, longitude: request.longitude },
-                                    { latitude: request.volunteer.latitude, longitude: request.volunteer.longitude }
-                                  ))}
-                                </p>
+                                <p className="text-xs uppercase tracking-[0.2em] text-[color:var(--foreground)]/55">{categoryLabels[request.category as Category]}</p>
+                                <h3 className="text-base font-semibold">{request.title}</h3>
+                                <p className="text-sm text-[color:var(--foreground)]/72 mt-1 line-clamp-3">{request.description}</p>
                               </div>
-                            </Popup>
-                          </Marker>
-                          <Polyline
-                            positions={[
-                              [request.latitude, request.longitude],
-                              [request.volunteer.latitude, request.volunteer.longitude]
-                            ]}
-                            pathOptions={{ color: "#10b981", dashArray: "5, 10", weight: 3 }}
-                          />
-                        </LayerGroup>
-                      )}
-                    </LayerGroup>
-                  ))}
+                              {request.locationName && (
+                                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                  📍 {request.locationName}
+                                </p>
+                              )}
+                              {request.responders && request.responders.length > 0 && (
+                                <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-md border border-emerald-500/20">
+                                  👥 Response Team: {request.responders.length} responder{request.responders.length > 1 ? 's' : ''}
+                                </div>
+                              )}
+                              <a
+                                href={`/requests/${request.id}`}
+                                className="inline-flex items-center gap-1 text-xs font-bold text-sky-500 hover:text-sky-400 hover:underline pt-1"
+                              >
+                                View Request & Team →
+                              </a>
+                            </div>
+                          </Popup>
+                        </Marker>
+
+                        {/* Render all responders for this request with coordinates */}
+                        {request.status !== "OPEN" && activeResponders.map((resp: any) => (
+                          <LayerGroup key={`${request.id}-${resp.id}`}>
+                            <Marker
+                              position={[resp.latitude, resp.longitude]}
+                              icon={volunteerIcon || undefined}
+                            >
+                              <Popup>
+                                <div>
+                                  <p className="text-xs uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-semibold">Volunteer (En Route)</p>
+                                  <h4 className="font-bold">{resp.name}</h4>
+                                  <p className="text-xs text-slate-500">Response Team Responder</p>
+                                  <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-2">
+                                    Proximity: {formatDistance(haversineDistanceKm(
+                                      { latitude: request.latitude, longitude: request.longitude },
+                                      { latitude: resp.latitude, longitude: resp.longitude }
+                                    ))}
+                                  </p>
+                                </div>
+                              </Popup>
+                            </Marker>
+                            <Polyline
+                              positions={[
+                                [request.latitude, request.longitude],
+                                [resp.latitude, resp.longitude]
+                              ]}
+                              pathOptions={{ color: "#10b981", dashArray: "5, 10", weight: 3 }}
+                            />
+                          </LayerGroup>
+                        ))}
+                      </LayerGroup>
+                    );
+                  })}
                 </MapContainer>
               </>
           </div>

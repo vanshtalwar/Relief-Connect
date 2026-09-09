@@ -24,11 +24,12 @@ model User {
   longitude       Float?
   createdAt       DateTime @default(now())
 
-  requests        HelpRequest[] @relation("Requester")
-  claimedRequests HelpRequest[] @relation("Volunteer")
+  requests        HelpRequest[]   @relation("Requester")
+  claimedRequests HelpRequest[]   @relation("Volunteer")
+  claims          RequestClaim[]
   messages        ChatMessage[]
-  reviewsGiven    Review[]      @relation("Reviewer")
-  reviewsReceived Review[]      @relation("Reviewee")
+  reviewsGiven    Review[]        @relation("Reviewer")
+  reviewsReceived Review[]        @relation("Reviewee")
 }
 
 model HelpRequest {
@@ -52,6 +53,7 @@ model HelpRequest {
 
   requester          User          @relation("Requester", fields: [requesterId], references: [id])
   assignedVolunteers User?         @relation("Volunteer", fields: [volunteerId], references: [id])
+  claims             RequestClaim[]
   statusHistory      StatusEvent[]
   messages           ChatMessage[]
   reviews            Review[]
@@ -73,6 +75,20 @@ model StatusEvent {
   note      String?
 
   request   HelpRequest @relation(fields: [requestId], references: [id])
+}
+
+model RequestClaim {
+  id          String   @id @default(uuid())
+  requestId   String
+  volunteerId String
+  createdAt   DateTime @default(now())
+
+  request   HelpRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  volunteer User        @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
+
+  @@unique([requestId, volunteerId])
+  @@index([requestId])
+  @@index([volunteerId])
 }
 
 model Alert {

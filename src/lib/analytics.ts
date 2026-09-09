@@ -14,8 +14,11 @@ export async function buildCoordinatorSummary() {
     const activeVolunteers = await prisma.user.count({
       where: {
         role: "VOLUNTEER",
-        claimedRequests: { some: {} }
-      }
+        OR: [
+          { claimedRequests: { some: {} } },
+          { claims: { some: {} } },
+        ],
+      },
     });
 
     const categoriesResult = await prisma.helpRequest.groupBy({

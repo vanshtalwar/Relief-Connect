@@ -19,6 +19,9 @@ export async function GET(request: Request) {
             claimedRequests: {
               none: { status: { in: ["CLAIMED", "IN_PROGRESS"] } },
             },
+            claims: {
+              none: { request: { status: { in: ["CLAIMED", "IN_PROGRESS"] } } },
+            },
           },
         ],
       },
